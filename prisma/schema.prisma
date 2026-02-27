@@ -12,3 +12,52 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Toko {
+  id        Int         @id @default(autoincrement())
+  nama_toko String
+  alamat    String?
+  stok      Stok[]
+  penjualan Penjualan[]
+  retur     Retur[]
+}
+
+model Kategori {
+  id            Int         @id @default(autoincrement())
+  nama_kategori String
+  stok          Stok[]
+  penjualan     Penjualan[]
+  retur         Retur[]
+}
+
+model Stok {
+  id          Int      @id @default(autoincrement())
+  jumlah      Int
+  harga_modal Int
+  id_toko     Int
+  id_kategori Int
+  toko        Toko     @relation(fields: [id_toko], references: [id])
+  kategori    Kategori @relation(fields: [id_kategori], references: [id])
+}
+
+model Penjualan {
+  id          Int      @id @default(autoincrement())
+  tanggal     DateTime @default(now())
+  qty_terjual Int
+  total_uang  Int
+  id_toko     Int
+  id_kategori Int
+  toko        Toko     @relation(fields: [id_toko], references: [id])
+  kategori    Kategori @relation(fields: [id_kategori], references: [id])
+}
+
+model Retur {
+  id          Int      @id @default(autoincrement())
+  tanggal     DateTime @default(now())
+  qty_retur   Int
+  keterangan  String?
+  id_toko     Int
+  id_kategori Int
+  toko        Toko     @relation(fields: [id_toko], references: [id])
+  kategori    Kategori @relation(fields: [id_kategori], references: [id])
+}
