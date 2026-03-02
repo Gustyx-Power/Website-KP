@@ -25,6 +25,15 @@ export const actions: Actions = {
             return fail(400, { error: 'All fields are required' });
         }
 
+        // Check stock before proceeding
+        const stok = await prisma.stok.findFirst({
+            where: { id_toko, id_kategori }
+        });
+
+        if (!stok || qty_terjual > stok.jumlah) {
+            return fail(400, { error: 'Stok tidak mencukupi!' });
+        }
+
         // Apply Prisma explicit transaction
         await prisma.$transaction([
             // 1. Insert Penjualan

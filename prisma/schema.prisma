@@ -35,8 +35,8 @@ model Stok {
   harga_modal Int
   id_toko     Int
   id_kategori Int
-  toko        Toko     @relation(fields: [id_toko], references: [id])
-  kategori    Kategori @relation(fields: [id_kategori], references: [id])
+  toko        Toko     @relation(fields: [id_toko], references: [id], onDelete: Cascade)
+  kategori    Kategori @relation(fields: [id_kategori], references: [id], onDelete: Cascade)
 }
 
 model Penjualan {
@@ -46,8 +46,8 @@ model Penjualan {
   total_uang  Int
   id_toko     Int
   id_kategori Int
-  toko        Toko     @relation(fields: [id_toko], references: [id])
-  kategori    Kategori @relation(fields: [id_kategori], references: [id])
+  toko        Toko     @relation(fields: [id_toko], references: [id], onDelete: Cascade)
+  kategori    Kategori @relation(fields: [id_kategori], references: [id], onDelete: Cascade)
 }
 
 model Retur {
@@ -57,6 +57,6 @@ model Retur {
   keterangan  String?
   id_toko     Int
   id_kategori Int
-  toko        Toko     @relation(fields: [id_toko], references: [id])
-  kategori    Kategori @relation(fields: [id_kategori], references: [id])
+  toko        Toko     @relation(fields: [id_toko], references: [id], onDelete: Cascade)
+  kategori    Kategori @relation(fields: [id_kategori], references: [id], onDelete: Cascade)
 }
