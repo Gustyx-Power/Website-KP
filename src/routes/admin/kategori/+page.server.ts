@@ -4,6 +4,7 @@ import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async () => {
     const kategori = await prisma.kategori.findMany({
+        where: { isActive: true },
         orderBy: { id: 'desc' }
     });
     return { kategori };
@@ -44,7 +45,10 @@ export const actions: Actions = {
             return fail(400, { error: 'ID is required' });
         }
 
-        await prisma.kategori.delete({ where: { id } });
+        await prisma.kategori.update({
+            where: { id },
+            data: { isActive: false }
+        });
         return { success: true };
     }
 };
