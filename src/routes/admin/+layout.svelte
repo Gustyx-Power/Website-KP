@@ -1,6 +1,19 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { scale, fade } from 'svelte/transition';
+	
+	let isProfileOpen = false;
+	
+	function toggleProfile() {
+		isProfileOpen = !isProfileOpen;
+	}
+	
+	function closeProfile() {
+		isProfileOpen = false;
+	}
 </script>
+
+<svelte:window on:click={() => { if(isProfileOpen) isProfileOpen = false; }} />
 
 <div
 	class="font-sans min-h-screen bg-slate-50 flex text-slate-800 selection:bg-emerald-100 selection:text-emerald-900"
@@ -207,13 +220,13 @@
 		<div class="p-4 border-t border-slate-50">
 			<div class="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-2xl">
 				<div
-					class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm"
+					class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm uppercase"
 				>
-					AD
+					{$page.data.user?.name ? $page.data.user.name.substring(0, 2) : 'AD'}
 				</div>
 				<div class="flex-1 min-w-0">
-					<p class="text-sm font-semibold text-slate-800 truncate">Adminstrator</p>
-					<p class="text-xs text-slate-500 truncate">admin@imdclothes.com</p>
+					<p class="text-sm font-semibold text-slate-800 truncate">{$page.data.user?.name || 'Administrator'}</p>
+					<p class="text-xs text-slate-500 truncate">{$page.data.user?.email || 'admin@imdclothes.com'}</p>
 				</div>
 			</div>
 		</div>
@@ -274,12 +287,70 @@
 					></span>
 				</button>
 				<div class="hidden sm:block h-6 w-px bg-slate-200"></div>
-				<div class="flex items-center gap-3 cursor-pointer">
-					<img
-						src="https://ui-avatars.com/api/?name=Admin+User&background=10b981&color=fff&rounded=true"
-						alt="Profile"
-						class="w-9 h-9 border-2 border-slate-100 rounded-full shadow-sm"
-					/>
+				<div class="relative">
+					<button 
+						class="flex items-center gap-3 cursor-pointer p-1 rounded-full hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+						on:click|stopPropagation={toggleProfile}
+						aria-label="User menu"
+						aria-expanded={isProfileOpen}
+						aria-haspopup="true"
+					>
+						<img
+							src={`https://ui-avatars.com/api/?name=${$page.data.user?.name || 'Admin+User'}&background=10b981&color=fff&rounded=true`}
+							alt="Profile"
+							class="w-9 h-9 border-2 border-slate-100 rounded-full shadow-sm"
+						/>
+					</button>
+
+					{#if isProfileOpen}
+						<!-- Dropdown Menu -->
+						<div 
+							transition:scale={{ duration: 150, start: 0.95 }}
+							class="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-100 overflow-hidden z-50 origin-top-right focus:outline-none"
+							role="menu"
+							tabindex="-1"
+							aria-orientation="vertical"
+							aria-labelledby="user-menu-button"
+							on:click|stopPropagation
+							on:keydown={(e) => {
+								if (e.key === 'Escape') closeProfile();
+							}}
+						>
+							<div class="p-4 border-b border-slate-50 bg-slate-50/50">
+								<p class="text-sm font-bold text-slate-800 truncate" role="none">
+									{$page.data.user?.name}
+								</p>
+								<p class="text-xs text-slate-500 truncate mt-0.5" role="none">
+									{$page.data.user?.email}
+								</p>
+								<div class="mt-2 inline-flex items-center rounded-md bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 ring-1 ring-inset ring-emerald-600/20">
+									{$page.data.user?.role}
+								</div>
+							</div>
+							<div class="py-2" role="none">
+								<a
+									href="/admin/pegawai"
+									class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-slate-600 hover:text-emerald-600 hover:bg-emerald-50 transition-colors w-full text-left"
+									role="menuitem"
+									on:click={closeProfile}
+								>
+									<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+									Update Profile
+								</a>
+								
+								<form method="POST" action="/logout" class="w-full">
+									<button
+										type="submit"
+										class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors w-full text-left"
+										role="menuitem"
+									>
+										<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" /></svg>
+										Sign out
+									</button>
+								</form>
+							</div>
+						</div>
+					{/if}
 				</div>
 			</div>
 		</header>
