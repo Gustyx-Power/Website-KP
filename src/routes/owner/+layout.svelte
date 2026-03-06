@@ -9,7 +9,9 @@
 	<!-- Sidebar -->
 	<aside class="w-64 bg-slate-900 text-slate-300 flex flex-col hidden lg:flex fixed inset-y-0">
 		<div class="h-16 flex items-center px-6 border-b border-slate-800">
-			<h1 class="text-xl font-bold text-white tracking-wide">Owner <span class="text-purple-500">View</span></h1>
+			<h1 class="text-xl font-bold tracking-tight text-white">
+				IMD<span class="text-purple-400">Clothes</span> <span class="text-slate-400 font-medium text-sm ml-1">Owner</span>
+			</h1>
 		</div>
 		
 		<nav class="flex-1 py-6 px-3 space-y-1">
@@ -46,7 +48,7 @@
 	<!-- Main Content -->
 	<div class="flex-1 lg:pl-64 flex flex-col min-h-screen">
 		<header class="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-4 lg:px-8 shrink-0">
-			<h2 class="text-lg font-semibold text-slate-800 lg:hidden">Owner View</h2>
+			<h2 class="text-lg font-bold text-slate-800 tracking-tight lg:hidden">IMD<span class="text-purple-600">Clothes</span> Owner</h2>
 			<div class="flex-1"></div>
 			<div class="text-sm text-slate-500">Status Laporan: <span class="text-emerald-600 font-medium">Real-Time</span></div>
 		</header>
