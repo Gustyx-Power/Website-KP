@@ -6,19 +6,52 @@ datasource db {
   provider = "postgresql"
 }
 
+// ──────────────────────────────────────────────
+// ENUMS
+// ──────────────────────────────────────────────
+
 enum Role {
+  OWNER
   ADMIN
-  STAFF
+  KASIR
 }
 
+enum StatusDistribusi {
+  PENDING
+  DIKIRIM
+  DITERIMA
+}
+
+enum StatusRetur {
+  PENDING
+  DISETUJUI
+  DITOLAK
+}
+
+// ──────────────────────────────────────────────
+// AUTH MODELS
+// ──────────────────────────────────────────────
+
 model User {
-  id        String    @id @default(uuid())
-  email     String    @unique
+  id        String   @id @default(uuid())
+  email     String   @unique
   password  String
   name      String
-  role      Role      @default(STAFF)
-  createdAt DateTime  @default(now())
-  sessions  Session[]
+  role      Role     @default(KASIR)
+  tokoId    Int? // Relasi opsional: KASIR diikat ke toko tertentu
+  isActive  Boolean  @default(true) // Soft-disable akun
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  toko     Toko?     @relation(fields: [tokoId], references: [id], onDelete: SetNull)
+  sessions Session[]
+
+  distribusiDibuat Distribusi[] @relation("DistribusiCreator")
+  penjualanDibuat  Penjualan[]  @relation("PenjualanCreator")
+  returDibuat      Retur[]      @relation("ReturCreator")
+
+  @@index([tokoId])
+  @@index([role])
 }
 
 model Session {
@@ -30,51 +63,138 @@ model Session {
   @@index([userId])
 }
 
+// ──────────────────────────────────────────────
+// MASTER DATA
+// ──────────────────────────────────────────────
+
 model Toko {
-  id        Int         @id @default(autoincrement())
+  id        Int      @id @default(autoincrement())
   nama_toko String
   alamat    String?
+  is_pusat  Boolean  @default(false) // True = Gudang Pusat
+  isActive  Boolean  @default(true) // Soft delete
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users     User[]
+  stok      Stok[]
   penjualan Penjualan[]
   retur     Retur[]
-  stok      Stok[]
+
+  distribusiMasuk  Distribusi[] @relation("DistribusiTujuan")
+  distribusiKeluar Distribusi[] @relation("DistribusiAsal")
 }
 
 model Kategori {
-  id            Int         @id @default(autoincrement())
-  nama_kategori String
-  penjualan     Penjualan[]
-  retur         Retur[]
-  stok          Stok[]
+  id            Int      @id @default(autoincrement())
+  nama_kategori String   @unique
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  stok      Stok[]
+  penjualan Penjualan[]
+  retur     Retur[]
+  distribusiItem DistribusiItem[]
 }
 
+// ──────────────────────────────────────────────
+// INVENTORI
+// ──────────────────────────────────────────────
+
 model Stok {
-  id          Int      @id @default(autoincrement())
+  id          Int @id @default(autoincrement())
   jumlah      Int
-  harga_modal Int
+  harga_modal Int // HPP per satuan dalam Rupiah
   id_toko     Int
   id_kategori Int
-  kategori    Kategori @relation(fields: [id_kategori], references: [id], onDelete: Cascade)
-  toko        Toko     @relation(fields: [id_toko], references: [id], onDelete: Cascade)
+
+  kategori Kategori @relation(fields: [id_kategori], references: [id], onDelete: Restrict)
+  toko     Toko     @relation(fields: [id_toko], references: [id], onDelete: Restrict)
+
+  @@unique([id_toko, id_kategori]) // Satu entri stok per kategori per toko
+  @@index([id_toko])
+  @@index([id_kategori])
 }
+
+// ──────────────────────────────────────────────
+// DISTRIBUSI (Mutasi Gudang Pusat -> Toko Cabang)
+// ──────────────────────────────────────────────
+
+model Distribusi {
+  id            Int              @id @default(autoincrement())
+  tanggal       DateTime         @default(now())
+  id_toko_asal  Int // Gudang Pusat
+  id_toko_tujuan Int // Toko Cabang tujuan
+  status        StatusDistribusi @default(PENDING)
+  keterangan    String?
+  createdById   String // Admin yang membuat
+
+  tokoAsal   Toko @relation("DistribusiAsal", fields: [id_toko_asal], references: [id], onDelete: Restrict)
+  tokoTujuan Toko @relation("DistribusiTujuan", fields: [id_toko_tujuan], references: [id], onDelete: Restrict)
+  createdBy  User @relation("DistribusiCreator", fields: [createdById], references: [id])
+
+  items DistribusiItem[]
+
+  @@index([id_toko_asal])
+  @@index([id_toko_tujuan])
+  @@index([tanggal])
+}
+
+model DistribusiItem {
+  id            Int @id @default(autoincrement())
+  distribusiId  Int
+  id_kategori   Int
+  jumlah        Int // Qty yang didistribusikan
+
+  distribusi Distribusi @relation(fields: [distribusiId], references: [id], onDelete: Cascade)
+  kategori   Kategori   @relation(fields: [id_kategori], references: [id], onDelete: Restrict)
+
+  @@index([distribusiId])
+}
+
+// ──────────────────────────────────────────────
+// PENJUALAN (Setoran Harian dari Kasir)
+// ──────────────────────────────────────────────
 
 model Penjualan {
   id          Int      @id @default(autoincrement())
   tanggal     DateTime @default(now())
   qty_terjual Int
-  total_uang  Int
+  harga_jual  Int // Harga jual satuan
+  total_uang  Int // qty_terjual * harga_jual
   id_toko     Int
   id_kategori Int
-  kategori    Kategori @relation(fields: [id_kategori], references: [id], onDelete: Cascade)
-  toko        Toko     @relation(fields: [id_toko], references: [id], onDelete: Cascade)
+  createdById String // Kasir/Admin yang menginput
+
+  kategori  Kategori @relation(fields: [id_kategori], references: [id], onDelete: Restrict)
+  toko      Toko     @relation(fields: [id_toko], references: [id], onDelete: Restrict)
+  createdBy User     @relation("PenjualanCreator", fields: [createdById], references: [id])
+
+  @@index([id_toko])
+  @@index([id_kategori])
+  @@index([tanggal])
 }
 
+// ──────────────────────────────────────────────
+// RETUR (Pengembalian Barang Toko -> Pusat)
+// ──────────────────────────────────────────────
+
 model Retur {
-  id          Int      @id @default(autoincrement())
-  tanggal     DateTime @default(now())
+  id          Int         @id @default(autoincrement())
+  tanggal     DateTime    @default(now())
   qty_retur   Int
   keterangan  String?
+  status      StatusRetur  @default(PENDING) // Flow approval
   id_toko     Int
   id_kategori Int
-  kategori    Kategori @relation(fields: [id_kategori], references: [id], onDelete: Cascade)
-  toko        Toko     @relation(fields: [id_toko], references: [id], onDelete: Cascade)
+  createdById String // Kasir/Admin yang input
+
+  kategori  Kategori @relation(fields: [id_kategori], references: [id], onDelete: Restrict)
+  toko      Toko     @relation(fields: [id_toko], references: [id], onDelete: Restrict)
+  createdBy User     @relation("ReturCreator", fields: [createdById], references: [id])
+
+  @@index([id_toko])
+  @@index([id_kategori])
+  @@index([tanggal])
 }
