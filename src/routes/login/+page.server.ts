@@ -36,7 +36,7 @@ export const actions: Actions = {
 
 		if (!user) {
 			return fail(400, {
-				errors: { email: ['Invalid credentials'] },
+				errors: { email: ['Invalid credentials'], password: undefined },
 				email: result.data.email
 			});
 		}
@@ -46,7 +46,7 @@ export const actions: Actions = {
 
 		if (!validPassword) {
 			return fail(400, {
-				errors: { email: ['Invalid credentials'] },
+				errors: { email: ['Invalid credentials'], password: undefined },
 				email: result.data.email
 			});
 		}
