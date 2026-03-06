@@ -14,7 +14,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-    create: async ({ request }) => {
+    create: async ({ request, locals }) => {
         const data = await request.formData();
         const qty_terjual = Number(data.get('qty_terjual'));
         const total_uang = Number(data.get('total_uang'));
@@ -38,7 +38,14 @@ export const actions: Actions = {
         await prisma.$transaction([
             // 1. Insert Penjualan
             prisma.penjualan.create({
-                data: { qty_terjual, total_uang, id_toko, id_kategori }
+                data: {
+                    qty_terjual,
+                    total_uang,
+                    harga_jual: Math.floor(total_uang / qty_terjual), // Fallback calculate
+                    id_toko,
+                    id_kategori,
+                    createdById: locals.user?.id || ''
+                }
             }),
             // 2. Decrement Stok logic
             prisma.stok.updateMany({

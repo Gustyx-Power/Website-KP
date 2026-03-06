@@ -39,7 +39,18 @@
 				/>
 			</div>
 		</div>
-		<div class="flex justify-end">
+		<div class="flex items-center gap-2 mt-4 select-none">
+			<input
+				type="checkbox"
+				id="is_pusat"
+				name="is_pusat"
+				class="w-4 h-4 text-emerald-600 bg-slate-100 border-slate-300 rounded focus:ring-emerald-500 focus:ring-2"
+			/>
+			<label for="is_pusat" class="text-sm font-medium text-slate-700 cursor-pointer"
+				>Tandai sebagai Gudang Pusat (Bukan Cabang)</label
+			>
+		</div>
+		<div class="flex justify-end mt-4">
 			<button
 				type="submit"
 				class="px-6 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
@@ -58,6 +69,7 @@
 				<tr class="bg-slate-50 border-b border-slate-100">
 					<th class="py-4 px-6 font-medium text-slate-600">ID</th>
 					<th class="py-4 px-6 font-medium text-slate-600">Nama Toko</th>
+					<th class="py-4 px-6 font-medium text-slate-600">Tipe</th>
 					<th class="py-4 px-6 font-medium text-slate-600">Alamat</th>
 					<th class="py-4 px-6 font-medium text-slate-600 text-center">Aksi</th>
 				</tr>
@@ -67,6 +79,13 @@
 					<tr class="hover:bg-slate-50 transition-colors">
 						<td class="py-3 px-6 text-sm text-slate-500">{item.id}</td>
 						<td class="py-3 px-6 font-medium text-slate-800">{item.nama_toko}</td>
+						<td class="py-3 px-6">
+							{#if item.is_pusat}
+								<span class="px-2 py-1 text-xs font-semibold text-emerald-700 bg-emerald-100 rounded-full">Gudang Pusat</span>
+							{:else}
+								<span class="px-2 py-1 text-xs font-medium text-slate-600 bg-slate-100 rounded-full">Cabang</span>
+							{/if}
+						</td>
 						<td class="py-3 px-6 text-sm text-slate-600">{item.alamat || '-'}</td>
 						<td class="py-3 px-6 text-center">
 							<form method="POST" action="?/delete" class="inline">

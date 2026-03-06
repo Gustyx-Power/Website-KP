@@ -7,8 +7,12 @@ export const load: PageServerLoad = async () => {
         include: { toko: true, kategori: true },
         orderBy: { id: 'desc' }
     });
-    const toko = await prisma.toko.findMany();
-    const kategori = await prisma.kategori.findMany();
+    const toko = await prisma.toko.findMany({
+        where: { isActive: true, is_pusat: true }
+    });
+    const kategori = await prisma.kategori.findMany({
+        where: { isActive: true }
+    });
 
     return { stok, toko, kategori };
 };
@@ -25,9 +29,24 @@ export const actions: Actions = {
             return fail(400, { error: 'All fields are required' });
         }
 
-        await prisma.stok.create({
-            data: { jumlah, harga_modal, id_toko, id_kategori }
+        const existingStok = await prisma.stok.findFirst({
+            where: { id_toko, id_kategori }
         });
+
+        if (existingStok) {
+            await prisma.stok.update({
+                where: { id: existingStok.id },
+                data: {
+                    jumlah: { increment: jumlah },
+                    harga_modal // Update to latest price
+                }
+            });
+        } else {
+            await prisma.stok.create({
+                data: { jumlah, harga_modal, id_toko, id_kategori }
+            });
+        }
+        
         return { success: true };
     },
     update: async ({ request }) => {

@@ -14,8 +14,8 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-    create: async ({ request }) => {
-        const data = await request.formData();
+	create: async ({ request, locals }) => {
+		const data = await request.formData();
         const qty_retur = Number(data.get('qty_retur'));
         const keterangan = data.get('keterangan')?.toString() || null;
         const id_toko = Number(data.get('id_toko'));
@@ -25,12 +25,18 @@ export const actions: Actions = {
             return fail(400, { error: 'qty_retur, id_toko, and id_kategori are required' });
         }
 
-        // Apply Prisma explicit transaction
-        await prisma.$transaction([
-            // 1. Insert Retur
-            prisma.retur.create({
-                data: { qty_retur, keterangan, id_toko, id_kategori }
-            }),
+		// Apply Prisma explicit transaction
+		await prisma.$transaction([
+			// 1. Insert Retur
+			prisma.retur.create({
+				data: {
+					qty_retur,
+					keterangan,
+					id_toko,
+					id_kategori,
+					createdById: locals.user?.id || ''
+				}
+			}),
             // 2. Increment Stok logic
             prisma.stok.updateMany({
                 where: { id_toko, id_kategori },
