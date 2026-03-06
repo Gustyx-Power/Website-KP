@@ -8,7 +8,8 @@ declare global {
 				id: string;
 				email: string;
 				name: string;
-				role: 'ADMIN' | 'STAFF';
+				role: 'OWNER' | 'ADMIN' | 'KASIR';
+				tokoId: number | null;
 			} | null;
 			session: {
 				id: string;

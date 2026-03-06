@@ -1,11 +1,22 @@
 import { getSessionCookie, validateSession } from '$lib/server/auth';
 import { redirect, type Handle } from '@sveltejs/kit';
 
-// Routes that don't require authentication
-const PUBLIC_ROUTES = ['/login'];
+// Routes accessible without authentication or globally accessible (like logout)
+const PUBLIC_ROUTES = ['/login', '/logout'];
 
-// Routes that require ADMIN role
-const ADMIN_ROUTES = ['/admin'];
+// Route access control matrix keyed by role
+const ROLE_ROUTES: Record<string, string[]> = {
+	OWNER: ['/owner', '/api'],
+	ADMIN: ['/admin', '/api'],
+	KASIR: ['/kasir', '/api']
+};
+
+// Default landing pages per role after login
+export const ROLE_HOME: Record<string, string> = {
+	OWNER: '/owner',
+	ADMIN: '/admin',
+	KASIR: '/kasir'
+};
 
 export const handle: Handle = async ({ event, resolve }) => {
 	const sessionId = getSessionCookie(event);
@@ -26,22 +37,29 @@ export const handle: Handle = async ({ event, resolve }) => {
 		return resolve(event);
 	}
 
-	// Redirect unauthenticated users to login (except for /unauthorized page)
+	// Allow /unauthorized page to prevent redirect loops
+	if (path === '/unauthorized') {
+		return resolve(event);
+	}
+
+	// Redirect unauthenticated users to login
 	if (!event.locals.user) {
-		// Allow access to /unauthorized page even without auth to prevent infinite loops
-		if (path === '/unauthorized') {
-			return resolve(event);
-		}
 		throw redirect(303, '/login');
 	}
 
-	// Check RBAC for admin-only routes
-	if (ADMIN_ROUTES.some((route) => path.startsWith(route))) {
-		if (event.locals.user.role !== 'ADMIN') {
-			throw redirect(303, '/unauthorized');
-		}
+	// Root path "/" redirects to role-specific home
+	if (path === '/') {
+		const home = ROLE_HOME[event.locals.user.role] ?? '/login';
+		throw redirect(303, home);
 	}
 
-	// All other routes are accessible to any authenticated user
+	// RBAC enforcement: check if the user's role has access to the requested route
+	const allowedRoutes = ROLE_ROUTES[event.locals.user.role] ?? [];
+	const hasAccess = allowedRoutes.some((route) => path.startsWith(route));
+
+	if (!hasAccess) {
+		throw redirect(303, '/unauthorized');
+	}
+
 	return resolve(event);
 };

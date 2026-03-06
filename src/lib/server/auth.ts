@@ -45,13 +45,21 @@ export async function validateSession(sessionId: string) {
 					id: true,
 					email: true,
 					name: true,
-					role: true
+					role: true,
+					tokoId: true,
+					isActive: true
 				}
 			}
 		}
 	});
 
 	if (!session) {
+		return { session: null, user: null };
+	}
+
+	// Reject disabled user accounts
+	if (!session.user.isActive) {
+		await prisma.session.delete({ where: { id: sessionId } });
 		return { session: null, user: null };
 	}
 
