@@ -20,8 +20,8 @@
 </svelte:head>
 
 <div class="mb-6">
-	<h2 class="text-2xl font-bold text-slate-800">Manajemen Pegawai & Akun</h2>
-	<p class="text-slate-500 mt-1">Kelola data user, role admin/kasir, dan penempatan toko cabang.</p>
+	<h2 class="text-2xl font-bold text-slate-800">Manajemen Pegawai Kasir</h2>
+	<p class="text-slate-500 mt-1">Sistem Registrasi Role Terbatas. Form ini diotorisasi khusus untuk menambahkan akun level Staf/Kasir Cabang. Untuk pendaftaran Admin Pusat / Owner, silakan hubungi Infrastruktur IT (Server Panel).</p>
 </div>
 
 <!-- Alert Messages -->
@@ -81,20 +81,19 @@
 					id="role"
 					name="role"
 					bind:value={roleSelected}
-					class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white transition-colors"
+					class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white transition-colors cursor-not-allowed bg-slate-50"
 				>
-					<option value="KASIR">Kasir / Pegawai Cabang</option>
-					<option value="ADMIN">Admin / Controller</option>
-					<option value="OWNER">Owner / Eksekutif</option>
+					<option value="KASIR" selected>Kasir / Pegawai Cabang</option>
+					<!-- ADMIN & OWNER Registration intentionally removed for Security -->
 				</select>
 			</div>
 			
 			<div class="md:col-span-2 lg:col-span-4">
-				<label for="tokoId" class="block text-sm font-medium text-slate-700 mb-1">Penugasan Toko (Kosongkan jika bukan Kasir)</label>
+				<label for="tokoId" class="block text-sm font-medium text-slate-700 mb-1">Penugasan Toko (Wajib untuk Kasir)</label>
 				<select
 					id="tokoId"
 					name="tokoId"
-					disabled={roleSelected === 'OWNER'}
+					required
 					class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none bg-white disabled:bg-slate-100 disabled:text-slate-400 transition-colors"
 				>
 					<option value="">-- Pilih Cabang Toko / Gudang --</option>
