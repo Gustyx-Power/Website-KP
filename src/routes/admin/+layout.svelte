@@ -16,17 +16,18 @@
 <svelte:window on:click={() => { if(isProfileOpen) isProfileOpen = false; }} />
 
 <div
-	class="font-sans min-h-screen bg-slate-50 flex text-slate-800 selection:bg-emerald-100 selection:text-emerald-900"
+	class="font-sans min-h-screen bg-[#f7f9fb] flex text-[#2c3437] selection:bg-[#d1e4ea] selection:text-[#1a3d47]"
+	style="font-family: 'Inter', sans-serif;"
 >
 	<!-- Sidebar -->
 	<aside
-		class="w-72 bg-white border-r border-slate-100 min-h-screen hidden lg:flex flex-col fixed inset-y-0 left-0 z-10"
+		class="w-72 bg-[#f0f4f7] min-h-screen hidden lg:flex flex-col fixed inset-y-0 left-0 z-10"
 	>
 		<!-- Logo Area -->
-		<div class="h-20 flex items-center px-8 border-b border-slate-50">
+		<div class="h-20 flex items-center px-8">
 			<div class="flex items-center gap-3">
 				<div
-					class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-sm"
+					class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#306677] to-[#225a6a] flex items-center justify-center shadow-sm"
 				>
 					<div class="grid grid-cols-2 gap-0.5">
 						<div class="w-2 h-2 bg-white rounded-sm"></div>
@@ -35,9 +36,12 @@
 						<div class="w-2 h-2 bg-white rounded-sm"></div>
 					</div>
 				</div>
-				<h1 class="text-xl font-bold tracking-tight text-slate-900">
-					Dashboard
-				</h1>
+				<div>
+					<h1 class="text-base font-bold tracking-tight text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">
+						Inventory Hub
+					</h1>
+					<p class="text-[10px] uppercase tracking-wider text-[#5f6b6f] font-medium">Warehouse Management</p>
+				</div>
 			</div>
 		</div>
 
@@ -45,10 +49,10 @@
 		<div class="flex-1 overflow-y-auto px-4 py-6 space-y-1">
 			<a
 				href="/admin"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url
+				class="flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 {$page.url
 					.pathname === '/admin'
-					? 'bg-slate-900 text-white font-semibold'
-					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+					? 'bg-[#d1e4ea] text-[#1a3d47] font-semibold'
+					: 'text-[#5f6b6f] hover:bg-[#e4e9ed] hover:text-[#2c3437] font-medium'}"
 			>
 				<svg
 					class="w-5 h-5"
@@ -66,11 +70,11 @@
 			</a>
 			<a
 				href="/admin/stok"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
+				class="flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 {$page.url.pathname.startsWith(
 					'/admin/stok'
 				)
-					? 'bg-slate-900 text-white font-semibold'
-					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+					? 'bg-[#d1e4ea] text-[#1a3d47] font-semibold'
+					: 'text-[#5f6b6f] hover:bg-[#e4e9ed] hover:text-[#2c3437] font-medium'}"
 			>
 				<svg
 					class="w-5 h-5"
@@ -88,11 +92,11 @@
 			</a>
 			<a
 				href="/admin/pegawai"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
+				class="flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 {$page.url.pathname.startsWith(
 					'/admin/pegawai'
 				)
-					? 'bg-slate-900 text-white font-semibold'
-					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+					? 'bg-[#d1e4ea] text-[#1a3d47] font-semibold'
+					: 'text-[#5f6b6f] hover:bg-[#e4e9ed] hover:text-[#2c3437] font-medium'}"
 			>
 				<svg
 					class="w-5 h-5"
@@ -110,11 +114,11 @@
 			</a>
 			<a
 				href="/admin/toko"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
+				class="flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 {$page.url.pathname.startsWith(
 					'/admin/toko'
 				)
-					? 'bg-slate-900 text-white font-semibold'
-					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+					? 'bg-[#d1e4ea] text-[#1a3d47] font-semibold'
+					: 'text-[#5f6b6f] hover:bg-[#e4e9ed] hover:text-[#2c3437] font-medium'}"
 			>
 				<svg
 					class="w-5 h-5"
@@ -132,11 +136,11 @@
 			</a>
 			<a
 				href="/admin/distribusi"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
+				class="flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 {$page.url.pathname.startsWith(
 					'/admin/distribusi'
 				)
-					? 'bg-slate-900 text-white font-semibold'
-					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+					? 'bg-[#d1e4ea] text-[#1a3d47] font-semibold'
+					: 'text-[#5f6b6f] hover:bg-[#e4e9ed] hover:text-[#2c3437] font-medium'}"
 			>
 				<svg
 					class="w-5 h-5"
@@ -154,11 +158,11 @@
 			</a>
 			<a
 				href="/admin/penjualan"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
+				class="flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 {$page.url.pathname.startsWith(
 					'/admin/penjualan'
 				)
-					? 'bg-slate-900 text-white font-semibold'
-					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+					? 'bg-[#d1e4ea] text-[#1a3d47] font-semibold'
+					: 'text-[#5f6b6f] hover:bg-[#e4e9ed] hover:text-[#2c3437] font-medium'}"
 			>
 				<svg
 					class="w-5 h-5"
@@ -176,11 +180,11 @@
 			</a>
 			<a
 				href="/admin/kategori"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
+				class="flex items-center gap-3 px-4 py-3 rounded-md transition-all duration-200 {$page.url.pathname.startsWith(
 					'/admin/kategori'
 				)
-					? 'bg-slate-900 text-white font-semibold'
-					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+					? 'bg-[#d1e4ea] text-[#1a3d47] font-semibold'
+					: 'text-[#5f6b6f] hover:bg-[#e4e9ed] hover:text-[#2c3437] font-medium'}"
 			>
 				<svg
 					class="w-5 h-5"
@@ -199,59 +203,16 @@
 		</div>
 
 		<!-- Bottom User Mini Box -->
-		<div class="p-4 border-t border-slate-50 space-y-3">
-			<!-- Theme Toggle -->
-			<div class="flex items-center justify-center gap-2 p-2 bg-slate-50 rounded-xl">
-				<button
-					class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-white transition-colors"
-					aria-label="Light mode"
-				>
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-						/>
-					</svg>
-				</button>
-				<button
-					class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 bg-white transition-colors shadow-sm"
-					aria-label="Dark mode"
-				>
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
-						/>
-					</svg>
-				</button>
-				<button
-					class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-white transition-colors"
-					aria-label="System mode"
-				>
-					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
-						/>
-					</svg>
-				</button>
-			</div>
-
-			<div class="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-2xl">
+		<div class="p-4 space-y-3">
+			<div class="flex items-center gap-3 px-4 py-3 bg-[#e4e9ed] rounded-xl">
 				<div
-					class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm uppercase"
+					class="w-9 h-9 rounded-full bg-gradient-to-br from-[#306677] to-[#225a6a] flex items-center justify-center text-white font-bold text-sm uppercase shadow-sm"
 				>
-					{$page.data.user?.name ? $page.data.user.name.substring(0, 2) : 'AD'}
+					{$page.data.user?.name ? $page.data.user.name.substring(0, 2) : 'AP'}
 				</div>
 				<div class="flex-1 min-w-0">
-					<p class="text-sm font-semibold text-slate-800 truncate">{$page.data.user?.name || 'Administrator'}</p>
-					<p class="text-xs text-slate-500 truncate">{$page.data.user?.email || 'admin@imdclothes.com'}</p>
+					<p class="text-sm font-semibold text-[#2c3437] truncate">{$page.data.user?.name || 'Admin Pusat'}</p>
+					<p class="text-xs text-[#5f6b6f] truncate uppercase tracking-wide">Master Access</p>
 				</div>
 			</div>
 		</div>
@@ -261,10 +222,10 @@
 	<main class="flex-1 ml-0 lg:ml-72 flex flex-col min-h-screen">
 		<!-- Top Navigation Header -->
 		<header
-			class="h-20 bg-white border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between px-6 lg:px-10"
+			class="h-20 bg-[#ffffff]/80 backdrop-blur-xl sticky top-0 z-20 flex items-center justify-between px-6 lg:px-10"
 		>
 			<!-- Mobile Menu Toggle -->
-			<button aria-label="Toggle Menu" class="lg:hidden text-slate-500 hover:text-slate-800 p-2 rounded-lg bg-slate-50">
+			<button aria-label="Toggle Menu" class="lg:hidden text-stone-500 hover:text-stone-800 p-2 rounded-xl bg-stone-100/50">
 				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 					><path
 						stroke-linecap="round"
@@ -278,7 +239,7 @@
 			<!-- Global Search Bar -->
 			<div class="hidden sm:flex items-center relative flex-1 max-w-md ml-4 lg:ml-0">
 				<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-					<svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+					<svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 						><path
 							stroke-linecap="round"
 							stroke-linejoin="round"
@@ -289,23 +250,17 @@
 				</div>
 				<input
 					type="text"
-					placeholder="Cari apapun..."
-					class="block w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:border-slate-300 focus:bg-white focus:ring-0 transition-all outline-none text-slate-700"
+					placeholder="Cari data operasional..."
+					class="block w-full pl-11 pr-4 py-2.5 bg-[#e4e9ed] border-none rounded-md text-sm placeholder-[#5f6b6f] focus:bg-[#ffffff] focus:ring-2 focus:ring-[#306677]/20 transition-all outline-none text-[#2c3437]"
 				/>
 			</div>
 
 			<!-- Header Right Actions -->
 			<div class="flex items-center gap-3">
-				<button
-					class="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
-				>
-					Buat
-				</button>
-				
 				<a
 					href="/admin/distribusi"
 					aria-label="Distribusi pending"
-					class="relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors {$page.data.pendingDistribusi > 0 ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}"
+					class="relative w-10 h-10 rounded-2xl flex items-center justify-center transition-colors {$page.data.pendingDistribusi > 0 ? 'text-amber-500 hover:bg-amber-50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100/50'}"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -326,7 +281,7 @@
 				<a
 					href="/admin/retur"
 					aria-label="Retur pending"
-					class="relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors {$page.data.pendingRetur > 0 ? 'text-orange-500 hover:bg-orange-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}"
+					class="relative w-10 h-10 rounded-2xl flex items-center justify-center transition-colors {$page.data.pendingRetur > 0 ? 'text-orange-500 hover:bg-orange-50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100/50'}"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -346,7 +301,7 @@
 				
 				<button
 					aria-label="Notifications"
-					class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+					class="w-10 h-10 rounded-2xl flex items-center justify-center transition-colors text-stone-400 hover:text-stone-600 hover:bg-stone-100/50"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 						><path
@@ -360,7 +315,7 @@
 
 				<button
 					aria-label="Messages"
-					class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+					class="w-10 h-10 rounded-2xl flex items-center justify-center transition-colors text-stone-400 hover:text-stone-600 hover:bg-stone-100/50"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 						><path
@@ -374,7 +329,7 @@
 
 				<div class="relative">
 					<button 
-						class="flex items-center gap-3 cursor-pointer p-1 rounded-xl hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
+						class="flex items-center gap-3 cursor-pointer p-1 rounded-2xl hover:bg-stone-100/50 transition-colors focus:outline-none focus:ring-2 focus:ring-stone-300 focus:ring-offset-2"
 						on:click|stopPropagation={toggleProfile}
 						aria-label="User menu"
 						aria-expanded={isProfileOpen}
@@ -383,7 +338,7 @@
 						<img
 							src={`https://ui-avatars.com/api/?name=${$page.data.user?.name || 'Admin+User'}&background=10b981&color=fff&rounded=true`}
 							alt="Profile"
-							class="w-9 h-9 border-2 border-slate-100 rounded-full shadow-sm"
+							class="w-9 h-9 border-2 border-stone-100 rounded-full shadow-sm"
 						/>
 					</button>
 
@@ -441,7 +396,7 @@
 		</header>
 
 		<!-- Route Content Slot -->
-		<div class="p-6 md:p-10 flex-1 max-w-7xl w-full mx-auto animate-fade-in">
+		<div class="p-6 md:p-10 flex-1 max-w-[1400px] w-full mx-auto animate-fade-in">
 			<slot />
 		</div>
 	</main>

@@ -1,6 +1,30 @@
 <script lang="ts">
 	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { tweened } from 'svelte/motion';
+	import { cubicOut } from 'svelte/easing';
+	
 	export let data;
+
+	// Animated counters
+	const totalTokoCabang = tweened(0, { duration: 1500, easing: cubicOut });
+	const totalBalance = tweened(0, { duration: 2000, easing: cubicOut });
+	const totalStokPusat = tweened(0, { duration: 1800, easing: cubicOut });
+	const balanceChange = tweened(0, { duration: 1200, easing: cubicOut });
+	const totalSalesRevenue = tweened(0, { duration: 2200, easing: cubicOut });
+	const avgDailySales = tweened(0, { duration: 1800, easing: cubicOut });
+
+	// Start animations on mount
+	onMount(() => {
+		totalTokoCabang.set(data.totalTokoCabang);
+		totalBalance.set(data.totalBalance);
+		totalStokPusat.set(data.totalStokPusat);
+		balanceChange.set(data.balanceChange);
+		
+		const totalRevenue = data.salesByDay.reduce((sum, d) => sum + (d._sum.total_uang || 0), 0);
+		totalSalesRevenue.set(totalRevenue);
+		avgDailySales.set(totalRevenue / data.salesByDay.length);
+	});
 
 	// Format currency to Indonesian Rupiah
 	function formatRupiah(amount: number): string {
@@ -16,7 +40,7 @@
 
 	// Get day labels for chart
 	function getDayLabel(date: Date): string {
-		const days = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+		const days = ['MIN', 'SEN', 'SEL', 'RAB', 'KAM', 'JUM', 'SAB'];
 		return days[new Date(date).getDay()];
 	}
 
@@ -34,335 +58,265 @@
 </script>
 
 <svelte:head>
-	<title>Dashboard - Gudang Pusat</title>
+	<title>Ringkasan Dashboard - Inventory Hub</title>
 </svelte:head>
 
-<div class="flex flex-col lg:flex-row gap-6">
-	<!-- Main Content -->
-	<div class="flex-1 space-y-6">
-		<!-- Header -->
-		<div>
-			<h1 class="text-3xl font-bold text-slate-900">Dashboard</h1>
-		</div>
+<!-- Breadcrumb -->
+<div class="mb-6">
+	<div class="flex items-center gap-2 text-sm text-[#5f6b6f]" style="font-family: 'Inter', sans-serif;">
+		<span>Halaman Utama</span>
+		<span>/</span>
+		<span class="text-[#2c3437] font-medium">Ringkasan Dashboard</span>
+	</div>
+</div>
 
-		<!-- Overview Cards -->
-		<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-			<div class="flex items-center justify-between mb-6">
-				<h2 class="text-lg font-semibold text-slate-900">Overview</h2>
-				<select
-					class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-				>
-					<option>Bulan lalu</option>
-					<option>Bulan ini</option>
-					<option>Tahun ini</option>
-				</select>
-			</div>
+<!-- Header Section -->
+<div class="mb-8">
+	<h1 class="text-4xl font-bold text-[#2c3437] mb-2" style="font-family: 'Manrope', sans-serif;">
+		Selamat datang kembali, Admin Pusat
+	</h1>
+	<div class="flex items-center gap-2 text-sm">
+		<span class="text-[#5f6b6f]">Status operasional</span>
+		<span class="px-3 py-1 bg-[#c8e6d7] text-[#1f3329] rounded-full text-xs font-semibold uppercase tracking-wide">Stabil</span>
+		<span class="text-[#5f6b6f]">hari ini.</span>
+	</div>
+</div>
 
-			<!-- Pending Distribution Alert -->
-			{#if data.pendingDistribusi > 0}
-				<a
-					href="/admin/distribusi"
-					class="block mb-4 bg-amber-50 border border-amber-200 rounded-xl p-4 hover:bg-amber-100 transition-colors"
-				>
-					<div class="flex items-start gap-3">
-						<div class="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center shrink-0 animate-pulse">
-							<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
-								/>
-							</svg>
-						</div>
-						<div class="flex-1">
-							<h3 class="font-bold text-amber-800">
-								{data.pendingDistribusi} Permintaan Distribusi Menunggu Persetujuan!
-							</h3>
-							<p class="text-sm text-amber-700 mt-1">
-								Ada permintaan stok dari cabang toko yang perlu Anda tinjau dan setujui.
-							</p>
-							<p class="text-xs text-amber-600 font-medium mt-2">
-								Klik untuk melihat detail →
-							</p>
-						</div>
+<!-- Action Buttons -->
+<div class="flex gap-3 mb-8">
+	<button class="px-5 py-2.5 bg-[#ffffff] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#e4e9ed] transition-all flex items-center gap-2">
+		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+		</svg>
+		Ekspor Laporan
+	</button>
+	<button class="px-5 py-2.5 bg-gradient-to-r from-[#306677] to-[#225a6a] text-white rounded-md text-sm font-semibold hover:shadow-lg transition-all flex items-center gap-2">
+		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+		</svg>
+		Distribusi Baru
+	</button>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+	<!-- Left Column - Main Content -->
+	<div class="lg:col-span-2 space-y-6">
+		<!-- Stok Gudang Pusat Card -->
+		<div class="bg-[#ffffff] rounded-xl p-6">
+			<div class="flex items-start justify-between mb-6">
+				<div>
+					<h2 class="text-sm uppercase tracking-wider text-[#5f6b6f] font-semibold mb-2">STOK GUDANG PUSAT</h2>
+					<div class="flex items-baseline gap-2">
+						<span class="text-5xl font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">
+							{Math.round($totalStokPusat).toLocaleString('id-ID')}
+						</span>
+						<span class="text-lg text-[#5f6b6f]">Unit</span>
 					</div>
-				</a>
-			{/if}
-
-			<!-- Pending Return Alert -->
-			{#if data.pendingRetur > 0}
-				<a
-					href="/admin/retur"
-					class="block mb-4 bg-orange-50 border border-orange-200 rounded-xl p-4 hover:bg-orange-100 transition-colors"
-				>
-					<div class="flex items-start gap-3">
-						<div class="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center shrink-0 animate-pulse">
-							<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-								<path
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									stroke-width="2"
-									d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
-								/>
-							</svg>
-						</div>
-						<div class="flex-1">
-							<h3 class="font-bold text-orange-800">
-								{data.pendingRetur} Permintaan Retur Menunggu Persetujuan!
-							</h3>
-							<p class="text-sm text-orange-700 mt-1">
-								Ada permintaan retur barang dari cabang toko yang perlu Anda tinjau dan setujui.
-							</p>
-							<p class="text-xs text-orange-600 font-medium mt-2">
-								Klik untuk melihat detail →
-							</p>
-						</div>
-					</div>
-				</a>
-			{/if}
-
-			<div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-				<!-- Customers Card -->
-				<div class="flex items-center gap-4">
-					<div
-						class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center shrink-0"
-					>
-						<svg
-							class="w-6 h-6 text-slate-600"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-							/>
-						</svg>
-					</div>
-					<div class="flex-1">
-						<p class="text-sm text-slate-500 mb-1">Pelanggan</p>
-						<p class="text-3xl font-bold text-slate-900">{data.totalTokoCabang}</p>
-						<p class="text-sm text-red-500 mt-1">
-							<span class="font-semibold">↓ 36.8%</span> vs bulan lalu
-						</p>
+					<div class="flex items-center gap-2 mt-2">
+						<span class="px-2 py-1 bg-[#c8e6d7] text-[#1f3329] rounded-full text-xs font-semibold">+12% Efisiensi</span>
 					</div>
 				</div>
-
-				<!-- Balance Card -->
-				<div class="flex items-center gap-4">
-					<div
-						class="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center shrink-0"
-					>
-						<svg
-							class="w-6 h-6 text-slate-600"
-							fill="none"
-							stroke="currentColor"
-							viewBox="0 0 24 24"
-						>
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-							/>
-						</svg>
-					</div>
-					<div class="flex-1">
-						<p class="text-sm text-slate-500 mb-1">Saldo</p>
-						<p class="text-3xl font-bold text-slate-900">
-							{(data.totalBalance / 1000).toFixed(0)}k
-						</p>
-						<p class="text-sm text-emerald-500 mt-1">
-							<span class="font-semibold">↑ {data.balanceChange.toFixed(1)}%</span> vs bulan lalu
-						</p>
-					</div>
+				<div class="flex items-center gap-2">
+					<img src="https://ui-avatars.com/api/?name=User+1&background=306677&color=fff&size=32" alt="" class="w-8 h-8 rounded-full border-2 border-white -mr-2" />
+					<img src="https://ui-avatars.com/api/?name=User+2&background=225a6a&color=fff&size=32" alt="" class="w-8 h-8 rounded-full border-2 border-white -mr-2" />
+					<span class="w-8 h-8 rounded-full bg-[#e4e9ed] flex items-center justify-center text-xs font-semibold text-[#5f6b6f]">+4</span>
 				</div>
 			</div>
-
-			<!-- New Customers Section -->
-			<div class="mt-8 pt-6 border-t border-slate-100">
-				<p class="text-sm font-semibold text-slate-900 mb-3">
-					{data.recentCustomers.length} kasir baru hari ini!
-				</p>
-				<p class="text-xs text-slate-500 mb-4">
-					Kirim pesan selamat datang ke semua kasir baru.
-				</p>
-
-				<div class="flex items-center gap-3">
-					{#each data.recentCustomers as customer}
-						<div class="flex flex-col items-center gap-2">
-							<img
-								src={`https://ui-avatars.com/api/?name=${customer.name}&background=random&size=64`}
-								alt={customer.name}
-								class="w-12 h-12 rounded-full border-2 border-white shadow-sm"
-							/>
-							<p class="text-xs text-slate-600 font-medium">{customer.name.split(' ')[0]}</p>
-						</div>
-					{/each}
-					<a
-						href="/admin/pegawai"
-						class="w-12 h-12 rounded-full border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 hover:border-emerald-500 hover:text-emerald-500 transition-colors"
-					>
-						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-							<path
-								stroke-linecap="round"
-								stroke-linejoin="round"
-								stroke-width="2"
-								d="M9 5l7 7-7 7"
-							/>
-						</svg>
-					</a>
-					<a
-						href="/admin/pegawai"
-						class="text-sm text-slate-600 hover:text-emerald-600 font-medium ml-2"
-					>
-						Lihat semua
-					</a>
-				</div>
+			<div class="flex gap-3">
+				<button class="px-4 py-2 bg-[#306677] text-white rounded-md text-sm font-semibold hover:bg-[#225a6a] transition-colors">
+					Kelola Stok
+				</button>
+				<button class="px-4 py-2 bg-[#e4e9ed] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#d8dfe8] transition-colors">
+					Lihat Audit
+				</button>
 			</div>
 		</div>
 
-		<!-- Product View Chart -->
-		<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+		<!-- Metrics Grid -->
+		<div class="grid grid-cols-3 gap-4">
+			<!-- Cabang Toko -->
+			<div class="bg-[#ffffff] rounded-xl p-5">
+				<div class="w-10 h-10 rounded-lg bg-[#d1e4ea] flex items-center justify-center mb-3">
+					<svg class="w-5 h-5 text-[#306677]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+					</svg>
+				</div>
+				<p class="text-xs uppercase tracking-wider text-[#5f6b6f] font-semibold mb-1">CABANG TOKO</p>
+				<p class="text-3xl font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">
+					{Math.round($totalTokoCabang)}
+				</p>
+				<p class="text-xs text-[#5f6b6f]">Aktif</p>
+			</div>
+
+			<!-- Total Pendapatan -->
+			<div class="bg-[#ffffff] rounded-xl p-5">
+				<div class="w-10 h-10 rounded-lg bg-[#d1e4ea] flex items-center justify-center mb-3">
+					<svg class="w-5 h-5 text-[#306677]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+					</svg>
+				</div>
+				<p class="text-xs uppercase tracking-wider text-[#5f6b6f] font-semibold mb-1">TOTAL PENDAPATAN</p>
+				<p class="text-2xl font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">
+					{formatRupiah($totalBalance)}
+				</p>
+				<p class="text-xs text-[#3f6754]">+4.5% Indikator</p>
+			</div>
+
+			<!-- Active Shipments -->
+			<div class="bg-[#ffffff] rounded-xl p-5">
+				<div class="w-10 h-10 rounded-lg bg-[#d1e4ea] flex items-center justify-center mb-3">
+					<svg class="w-5 h-5 text-[#306677]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+					</svg>
+				</div>
+				<p class="text-xs uppercase tracking-wider text-[#5f6b6f] font-semibold mb-1">PENGIRIMAN AKTIF</p>
+				<p class="text-3xl font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">
+					{data.pendingDistribusi}
+				</p>
+				<p class="text-xs text-[#5f6b6f]">Dalam Perjalanan</p>
+			</div>
+		</div>
+
+		<!-- Tren Penjualan Chart -->
+		<div class="bg-[#ffffff] rounded-xl p-6">
 			<div class="flex items-center justify-between mb-6">
-				<h2 class="text-lg font-semibold text-slate-900">Tampilan Produk</h2>
-				<select
-					class="text-sm border border-slate-200 rounded-lg px-3 py-1.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-				>
-					<option>7 hari terakhir</option>
-					<option>30 hari terakhir</option>
-					<option>90 hari terakhir</option>
+				<div>
+					<h3 class="text-base font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">Tren Penjualan</h3>
+					<p class="text-sm text-[#5f6b6f]">Performance over the last 7 days</p>
+				</div>
+				<select class="px-3 py-2 bg-[#e4e9ed] text-[#2c3437] rounded-md text-sm border-none focus:ring-2 focus:ring-[#306677]/20 outline-none">
+					<option>Last 7 Days</option>
+					<option>Last 30 Days</option>
+					<option>Last 90 Days</option>
 				</select>
 			</div>
 
 			<!-- Chart -->
-			<div class="relative h-64">
-				<div class="absolute inset-0 flex items-end justify-between gap-2 px-4">
+			<div class="relative h-64 mb-4">
+				<div class="absolute inset-0 flex items-end justify-between gap-3 px-2">
 					{#each data.salesByDay as day, i}
 						{@const height = ((day._sum.total_uang || 0) / maxSales) * 100}
 						{@const isHighest = (day._sum.total_uang || 0) === maxSales}
 						<div class="flex-1 flex flex-col items-center gap-2">
 							<div class="relative w-full group">
 								{#if isHighest}
-									<div
-										class="absolute -top-8 left-1/2 -translate-x-1/2 bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded-md whitespace-nowrap"
-									>
-										{((day._sum.total_uang || 0) / 1000000).toFixed(1)}m
-									</div>
-									<div
-										class="absolute -top-10 left-1/2 -translate-x-1/2 w-8 h-8 bg-emerald-500 rounded-full flex items-center justify-center"
-									>
-										<svg
-											class="w-4 h-4 text-white"
-											fill="none"
-											stroke="currentColor"
-											viewBox="0 0 24 24"
-										>
-											<path
-												stroke-linecap="round"
-												stroke-linejoin="round"
-												stroke-width="2"
-												d="M5 13l4 4L19 7"
-											/>
-										</svg>
+									<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-[#2c3437] text-white text-xs font-bold px-2 py-1 rounded whitespace-nowrap">
+										Puncak
 									</div>
 								{/if}
 								<div
 									class="w-full rounded-t-lg transition-all duration-300 {isHighest
-										? 'bg-emerald-500'
-										: 'bg-slate-200'} hover:opacity-80 cursor-pointer"
-									style="height: {height}%"
+										? 'bg-[#306677]'
+										: 'bg-[#d8dfe8]'} hover:opacity-80 cursor-pointer"
+									style="height: {Math.max(height, 5)}%"
 								></div>
-								<!-- Tooltip on hover -->
-								<div
-									class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none"
-								>
+								<div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-[#2c3437] text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none z-10">
 									{formatRupiah(day._sum.total_uang || 0)}
 								</div>
 							</div>
-							<p class="text-xs text-slate-500 font-medium">{getDayLabel(day.tanggal)}</p>
+							<p class="text-xs text-[#5f6b6f] font-medium uppercase">{getDayLabel(day.tanggal)}</p>
 						</div>
 					{/each}
 				</div>
 			</div>
-
-			<!-- Total Revenue -->
-			<div class="mt-8 pt-6 border-t border-slate-100">
-				<p class="text-4xl font-bold text-slate-300">
-					{formatRupiah(data.salesByDay.reduce((sum, d) => sum + (d._sum.total_uang || 0), 0))}
-				</p>
-			</div>
 		</div>
 	</div>
 
-	<!-- Sidebar -->
-	<div class="w-full lg:w-80 space-y-6">
-		<!-- Popular Products -->
-		<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-			<h2 class="text-lg font-semibold text-slate-900 mb-4">Produk Populer</h2>
+	<!-- Right Column - Sidebar -->
+	<div class="space-y-6">
+		<!-- Produk Terlaris -->
+		<div class="bg-[#ffffff] rounded-xl p-6">
+			<div class="flex items-center justify-between mb-5">
+				<h3 class="text-base font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">Produk Terlaris</h3>
+				<span class="text-xs text-[#5f6b6f] uppercase tracking-wider font-semibold">Top 5</span>
+			</div>
 
 			<div class="space-y-4">
-				{#each data.popularProducts as product, i}
+				{#each data.popularProducts.slice(0, 3) as product, i}
 					<div class="flex items-center gap-3">
-						<div
-							class="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center text-white font-bold shrink-0"
-						>
-							{product.name.substring(0, 2).toUpperCase()}
+						<div class="relative">
+							<div class="w-10 h-10 rounded-lg bg-[#d1e4ea] flex items-center justify-center text-[#306677] font-bold text-sm">
+								{product.name.substring(0, 1)}
+							</div>
+							<div class="absolute -top-1 -right-1 w-5 h-5 bg-[#306677] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+								{i + 1}
+							</div>
 						</div>
 						<div class="flex-1 min-w-0">
-							<p class="text-sm font-semibold text-slate-900 truncate">{product.name}</p>
-							<p class="text-xs text-slate-500">UI Kit</p>
+							<p class="text-sm font-semibold text-[#2c3437] truncate">{product.name}</p>
+							<p class="text-xs text-[#5f6b6f]">{product.quantity} pcs terjual</p>
 						</div>
-						<div class="text-right">
-							<p class="text-sm font-bold text-slate-900">{formatRupiah(product.revenue)}</p>
-							<span
-								class="inline-block px-2 py-0.5 text-xs font-medium text-emerald-700 bg-emerald-50 rounded"
-							>
-								Aktif
-							</span>
-						</div>
+						<p class="text-sm font-bold text-[#2c3437]">{formatRupiah(product.revenue)}</p>
 					</div>
 				{/each}
 			</div>
 
-			<a
-				href="/admin/stok"
-				class="block w-full mt-6 py-2.5 border border-slate-200 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-colors text-center"
-			>
-				Semua produk
+			<a href="/admin/stok" class="block w-full mt-5 py-2.5 bg-[#e4e9ed] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#d8dfe8] transition-colors text-center">
+				Lihat Semua Produk
 			</a>
 		</div>
 
-		<!-- Comments/Recent Transactions -->
-		<div class="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-			<h2 class="text-lg font-semibold text-slate-900 mb-4">Komentar</h2>
+		<!-- Kasir Baru Bergabung -->
+		<div class="bg-[#ffffff] rounded-xl p-6">
+			<div class="mb-4">
+				<h3 class="text-base font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">Kasir Baru Bergabung</h3>
+			</div>
 
-			<div class="space-y-4">
-				{#each data.recentTransactions as transaction}
-					<div class="flex gap-3">
+			<div class="space-y-3">
+				{#each data.recentCustomers.slice(0, 2) as customer}
+					<div class="flex items-center gap-3 p-3 bg-[#f0f4f7] rounded-lg">
 						<img
-							src={`https://ui-avatars.com/api/?name=${transaction.createdBy.name}&background=random&size=40`}
-							alt={transaction.createdBy.name}
-							class="w-10 h-10 rounded-full shrink-0"
+							src={`https://ui-avatars.com/api/?name=${customer.name}&background=306677&color=fff&size=40`}
+							alt={customer.name}
+							class="w-10 h-10 rounded-full"
 						/>
 						<div class="flex-1 min-w-0">
-							<p class="text-sm">
-								<span class="font-semibold text-slate-900">{transaction.createdBy.name}</span>
-								<span class="text-slate-600"> on </span>
-								<span class="font-medium text-slate-900">{transaction.kategori.nama_kategori}</span>
+							<p class="text-sm font-semibold text-[#2c3437] truncate">{customer.name}</p>
+							<p class="text-xs text-[#5f6b6f] uppercase tracking-wide">Terverifikasi</p>
+						</div>
+						<button class="text-[#5f6b6f] hover:text-[#2c3437]">
+							<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+							</svg>
+						</button>
+					</div>
+				{/each}
+			</div>
+		</div>
+
+		<!-- Aktivitas Terbaru -->
+		<div class="bg-[#ffffff] rounded-xl p-6">
+			<div class="flex items-center justify-between mb-5">
+				<h3 class="text-base font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">Aktivitas Terbaru</h3>
+			</div>
+
+			<div class="space-y-4">
+				{#each data.recentTransactions.slice(0, 3) as transaction}
+					<div class="flex gap-3">
+						<div class="w-8 h-8 rounded-lg bg-[#c8e6d7] flex items-center justify-center shrink-0">
+							<svg class="w-4 h-4 text-[#3f6754]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+							</svg>
+						</div>
+						<div class="flex-1 min-w-0">
+							<p class="text-sm text-[#2c3437]">
+								<span class="font-semibold">{transaction.createdBy.name.split(' ')[0]}</span> menyelesaikan penjualan
 							</p>
-							<p class="text-xs text-slate-400 mt-0.5">{timeAgo(transaction.tanggal)}</p>
-							<p class="text-sm text-slate-600 mt-2">
-								Transaksi penjualan {transaction.qty_terjual} pcs senilai {formatRupiah(
-									transaction.total_uang
-								)}
-							</p>
+							<div class="flex items-center gap-2 mt-1">
+								<p class="text-xs text-[#5f6b6f]">{timeAgo(transaction.tanggal)}</p>
+								<span class="text-[#acb3b7]">•</span>
+								<p class="text-xs font-semibold text-[#3f6754]">{formatRupiah(transaction.total_uang)}</p>
+							</div>
 						</div>
 					</div>
 				{/each}
+
+				<button class="w-full py-2 text-sm text-[#306677] font-semibold hover:text-[#225a6a] transition-colors flex items-center justify-center gap-1">
+					<span>Lihat Semua Aktivitas</span>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+					</svg>
+				</button>
 			</div>
 		</div>
 	</div>
