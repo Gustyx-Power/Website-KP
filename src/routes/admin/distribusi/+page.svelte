@@ -48,8 +48,21 @@
 </svelte:head>
 
 <div class="mb-6">
-	<h1 class="text-2xl font-bold text-slate-800">Kelola Distribusi Stok</h1>
-	<p class="text-slate-500 mt-1">Kelola permintaan stok dari cabang toko</p>
+	<div class="flex items-center justify-between">
+		<div>
+			<h1 class="text-2xl font-bold text-slate-800">Kelola Distribusi Stok</h1>
+			<p class="text-slate-500 mt-1">Kelola permintaan stok dari cabang toko</p>
+		</div>
+		<a 
+			href="/admin/distribusi/buat"
+			class="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+		>
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+			</svg>
+			Buat Distribusi Baru
+		</a>
+	</div>
 </div>
 
 <!-- Stats -->
