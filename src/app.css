@@ -1,3 +1,42 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    /* Aeon Interface Color System */
+    --primary: #306677;
+    --primary-dim: #225a6a;
+    --primary-container: #d1e4ea;
+    --on-primary: #ffffff;
+    --on-primary-container: #1a3d47;
+    
+    --secondary: #506076;
+    --secondary-container: #d8dfe8;
+    --on-secondary: #ffffff;
+    --on-secondary-container: #2a3442;
+    
+    --tertiary: #3f6754;
+    --tertiary-container: #c8e6d7;
+    --on-tertiary: #ffffff;
+    --on-tertiary-container: #1f3329;
+    
+    --error: #ba1a1a;
+    --error-container: #ffdad6;
+    --on-error: #ffffff;
+    --on-error-container: #410002;
+    
+    --surface: #f7f9fb;
+    --surface-container: #eaeff2;
+    --surface-container-low: #f0f4f7;
+    --surface-container-high: #e4e9ed;
+    --surface-container-highest: #dfe4e8;
+    --surface-container-lowest: #ffffff;
+    
+    --on-surface: #2c3437;
+    --on-surface-variant: #5f6b6f;
+    --outline-variant: #acb3b7;
+  }
+}

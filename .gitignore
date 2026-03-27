@@ -24,3 +24,4 @@ vite.config.ts.timestamp-*
 
 /../generated/prisma
 prisma/migrations/20260306101123_init/migration.sql
+DESIGN.md
