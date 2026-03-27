@@ -21,8 +21,26 @@
 </svelte:head>
 
 <div class="mb-5">
-	<h1 class="text-xl font-bold text-slate-800">Retur Barang</h1>
-	<p class="text-slate-500 text-sm mt-1">Kembalikan produk cacat/tak laku ke Gudang Pusat.</p>
+	<div class="flex items-center justify-between">
+		<div>
+			<h1 class="text-xl font-bold text-slate-800">Retur Barang</h1>
+			<p class="text-slate-500 text-sm mt-1">Kembalikan produk cacat/tak laku ke Gudang Pusat.</p>
+		</div>
+		<a
+			href="/kasir/retur/status"
+			class="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors flex items-center gap-2"
+		>
+			<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path
+					stroke-linecap="round"
+					stroke-linejoin="round"
+					stroke-width="2"
+					d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"
+				/>
+			</svg>
+			Lihat Status
+		</a>
+	</div>
 </div>
 
 {#if form?.error}

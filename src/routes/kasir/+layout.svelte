@@ -6,8 +6,11 @@
 
 	// Simple active route checker
 	$: isSisaStok = $page.url.pathname === '/kasir';
+	$: isPermintaan = $page.url.pathname.startsWith('/kasir/permintaan');
+	$: isDistribusi = $page.url.pathname.startsWith('/kasir/distribusi');
 	$: isPenjualan = $page.url.pathname.startsWith('/kasir/penjualan');
-	$: isRetur = $page.url.pathname.startsWith('/kasir/retur');
+	$: isRetur = $page.url.pathname === '/kasir/retur';
+	$: isReturStatus = $page.url.pathname.startsWith('/kasir/retur/status');
 </script>
 
 <div class="min-h-screen bg-slate-50 flex flex-col font-sans pb-20">
@@ -55,42 +58,49 @@
 	<nav class="fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around items-center pb-safe pt-2 shadow-[0_-4px_6px_-1px_rgb(0,0,0,0.05)] z-40 lg:hidden">
 		<a
 			href="/kasir"
-			class="flex flex-col items-center justify-center p-2 min-w-[4rem] transition-colors {isSisaStok ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}"
+			class="flex flex-col items-center justify-center p-2 min-w-[3rem] transition-colors {isSisaStok ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}"
 		>
-			<svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width={isSisaStok ? "2.5" : "2"} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
 			</svg>
-			<span class="text-[10px] font-medium">Stok</span>
+			<span class="text-[9px] font-medium">Stok</span>
+		</a>
+		<a
+			href="/kasir/permintaan"
+			class="flex flex-col items-center justify-center p-2 min-w-[3rem] transition-colors {isPermintaan ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}"
+		>
+			<svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width={isPermintaan ? "2.5" : "2"} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+			</svg>
+			<span class="text-[9px] font-medium">Minta</span>
+		</a>
+		<a
+			href="/kasir/distribusi"
+			class="flex flex-col items-center justify-center p-2 min-w-[3rem] transition-colors {isDistribusi ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}"
+		>
+			<svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width={isDistribusi ? "2.5" : "2"} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+			</svg>
+			<span class="text-[9px] font-medium">Status</span>
 		</a>
 		<a
 			href="/kasir/penjualan"
-			class="flex flex-col items-center justify-center p-2 min-w-[4rem] transition-colors {isPenjualan ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}"
+			class="flex flex-col items-center justify-center p-2 min-w-[3rem] transition-colors {isPenjualan ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}"
 		>
-			<svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width={isPenjualan ? "2.5" : "2"} d="M12 4v16m8-8H4" />
 			</svg>
-			<span class="text-[10px] font-medium">Setoran</span>
+			<span class="text-[9px] font-medium">Jual</span>
 		</a>
 		<a
 			href="/kasir/retur"
-			class="flex flex-col items-center justify-center p-2 min-w-[4rem] transition-colors {isRetur ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}"
+			class="flex flex-col items-center justify-center p-2 min-w-[3rem] transition-colors {isRetur ? 'text-emerald-600' : 'text-slate-400 hover:text-slate-600'}"
 		>
-			<svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+			<svg class="w-5 h-5 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width={isRetur ? "2.5" : "2"} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
 			</svg>
-			<span class="text-[10px] font-medium">Retur</span>
+			<span class="text-[9px] font-medium">Retur</span>
 		</a>
-		<form method="POST" action="/logout" class="flex">
-			<button
-				type="submit"
-				class="flex flex-col items-center justify-center p-2 min-w-[4rem] text-slate-400 hover:text-red-500 transition-colors"
-			>
-				<svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-				</svg>
-				<span class="text-[10px] font-medium">Keluar</span>
-			</button>
-		</form>
 	</nav>
 	
 	<!-- Desktop Sidebar for Navigation (Hidden on Mobile) -->
@@ -103,6 +113,24 @@
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
 			</svg>
 			Sisa Stok Fisik
+		</a>
+		<a
+			href="/kasir/permintaan"
+			class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {isPermintaan ? 'bg-emerald-50 text-emerald-600 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}"
+		>
+			<svg class="w-5 h-5 {isPermintaan ? 'text-emerald-500' : 'text-slate-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+			</svg>
+			Permintaan Stok
+		</a>
+		<a
+			href="/kasir/distribusi"
+			class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {isDistribusi ? 'bg-emerald-50 text-emerald-600 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}"
+		>
+			<svg class="w-5 h-5 {isDistribusi ? 'text-emerald-500' : 'text-slate-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+			</svg>
+			Status Distribusi
 		</a>
 		<a
 			href="/kasir/penjualan"
@@ -121,6 +149,15 @@
 				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
 			</svg>
 			Ajukan Retur Barang
+		</a>
+		<a
+			href="/kasir/retur/status"
+			class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {isReturStatus ? 'bg-emerald-50 text-emerald-600 font-semibold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800'}"
+		>
+			<svg class="w-5 h-5 {isReturStatus ? 'text-emerald-500' : 'text-slate-400'}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+				<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+			</svg>
+			Status Retur
 		</a>
 		
 		<div class="mt-auto mb-6">
