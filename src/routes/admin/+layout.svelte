@@ -26,38 +26,32 @@
 		<div class="h-20 flex items-center px-8 border-b border-slate-50">
 			<div class="flex items-center gap-3">
 				<div
-					class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center shadow-sm"
+					class="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center shadow-sm"
 				>
-					<svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-						><path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2.5"
-							d="M13 10V3L4 14h7v7l9-11h-7z"
-						></path></svg
-					>
+					<div class="grid grid-cols-2 gap-0.5">
+						<div class="w-2 h-2 bg-white rounded-sm"></div>
+						<div class="w-2 h-2 bg-white/40 rounded-sm"></div>
+						<div class="w-2 h-2 bg-white/40 rounded-sm"></div>
+						<div class="w-2 h-2 bg-white rounded-sm"></div>
+					</div>
 				</div>
 				<h1 class="text-xl font-bold tracking-tight text-slate-900">
-					IMD<span class="text-emerald-500">Clothes</span>
+					Dashboard
 				</h1>
 			</div>
 		</div>
 
 		<!-- Navigation -->
 		<div class="flex-1 overflow-y-auto px-4 py-6 space-y-1">
-			<p class="px-4 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 mt-2">
-				Main Menu
-			</p>
-
 			<a
 				href="/admin"
 				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url
 					.pathname === '/admin'
-					? 'bg-emerald-50 text-emerald-600 font-semibold'
-					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium'}"
+					? 'bg-slate-900 text-white font-semibold'
+					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
 			>
 				<svg
-					class="w-5 h-5 {$page.url.pathname === '/admin' ? 'text-emerald-500' : 'text-slate-400'}"
+					class="w-5 h-5"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -71,89 +65,15 @@
 				Dashboard
 			</a>
 			<a
-				href="/admin/pegawai"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
-					'/admin/pegawai'
-				)
-					? 'bg-emerald-50 text-emerald-600 font-semibold'
-					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium'}"
-			>
-				<svg
-					class="w-5 h-5 {$page.url.pathname.startsWith('/admin/pegawai')
-						? 'text-emerald-500'
-						: 'text-slate-400'}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-					><path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
-					></path></svg
-				>
-				Pegawai & Akun
-			</a>
-			<a
-				href="/admin/toko"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
-					'/admin/toko'
-				)
-					? 'bg-emerald-50 text-emerald-600 font-semibold'
-					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium'}"
-			>
-				<svg
-					class="w-5 h-5 {$page.url.pathname.startsWith('/admin/toko')
-						? 'text-emerald-500'
-						: 'text-slate-400'}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-					><path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
-					></path></svg
-				>
-				Cabang Toko
-			</a>
-			<a
-				href="/admin/kategori"
-				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
-					'/admin/kategori'
-				)
-					? 'bg-emerald-50 text-emerald-600 font-semibold'
-					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium'}"
-			>
-				<svg
-					class="w-5 h-5 {$page.url.pathname.startsWith('/admin/kategori')
-						? 'text-emerald-500'
-						: 'text-slate-400'}"
-					fill="none"
-					stroke="currentColor"
-					viewBox="0 0 24 24"
-					><path
-						stroke-linecap="round"
-						stroke-linejoin="round"
-						stroke-width="2"
-						d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
-					></path></svg
-				>
-				Kategori Produk
-			</a>
-			<a
 				href="/admin/stok"
 				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
 					'/admin/stok'
 				)
-					? 'bg-emerald-50 text-emerald-600 font-semibold'
-					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium'}"
+					? 'bg-slate-900 text-white font-semibold'
+					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
 			>
 				<svg
-					class="w-5 h-5 {$page.url.pathname.startsWith('/admin/stok')
-						? 'text-emerald-500'
-						: 'text-slate-400'}"
+					class="w-5 h-5"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -164,20 +84,84 @@
 						d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
 					></path></svg
 				>
-				Manajemen Stok
+				Produk
+			</a>
+			<a
+				href="/admin/pegawai"
+				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
+					'/admin/pegawai'
+				)
+					? 'bg-slate-900 text-white font-semibold'
+					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+			>
+				<svg
+					class="w-5 h-5"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+					></path></svg
+				>
+				Pelanggan
+			</a>
+			<a
+				href="/admin/toko"
+				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
+					'/admin/toko'
+				)
+					? 'bg-slate-900 text-white font-semibold'
+					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+			>
+				<svg
+					class="w-5 h-5"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+					></path></svg
+				>
+				Toko
+			</a>
+			<a
+				href="/admin/distribusi"
+				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
+					'/admin/distribusi'
+				)
+					? 'bg-slate-900 text-white font-semibold'
+					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
+			>
+				<svg
+					class="w-5 h-5"
+					fill="none"
+					stroke="currentColor"
+					viewBox="0 0 24 24"
+					><path
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						stroke-width="2"
+						d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+					></path></svg
+				>
+				Distribusi
 			</a>
 			<a
 				href="/admin/penjualan"
 				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
 					'/admin/penjualan'
 				)
-					? 'bg-emerald-50 text-emerald-600 font-semibold'
-					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium'}"
+					? 'bg-slate-900 text-white font-semibold'
+					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
 			>
 				<svg
-					class="w-5 h-5 {$page.url.pathname.startsWith('/admin/penjualan')
-						? 'text-emerald-500'
-						: 'text-slate-400'}"
+					class="w-5 h-5"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -185,23 +169,21 @@
 						stroke-linecap="round"
 						stroke-linejoin="round"
 						stroke-width="2"
-						d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+						d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
 					></path></svg
 				>
-				Data Penjualan
+				Pendapatan
 			</a>
 			<a
-				href="/admin/retur"
+				href="/admin/kategori"
 				class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {$page.url.pathname.startsWith(
-					'/admin/retur'
+					'/admin/kategori'
 				)
-					? 'bg-emerald-50 text-emerald-600 font-semibold'
-					: 'text-slate-500 hover:bg-slate-50 hover:text-slate-800 font-medium'}"
+					? 'bg-slate-900 text-white font-semibold'
+					: 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 font-medium'}"
 			>
 				<svg
-					class="w-5 h-5 {$page.url.pathname.startsWith('/admin/retur')
-						? 'text-emerald-500'
-						: 'text-slate-400'}"
+					class="w-5 h-5"
 					fill="none"
 					stroke="currentColor"
 					viewBox="0 0 24 24"
@@ -209,15 +191,58 @@
 						stroke-linecap="round"
 						stroke-linejoin="round"
 						stroke-width="2"
-						d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+						d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
 					></path></svg
 				>
-				Data Retur
+				Promosi
 			</a>
 		</div>
 
 		<!-- Bottom User Mini Box -->
-		<div class="p-4 border-t border-slate-50">
+		<div class="p-4 border-t border-slate-50 space-y-3">
+			<!-- Theme Toggle -->
+			<div class="flex items-center justify-center gap-2 p-2 bg-slate-50 rounded-xl">
+				<button
+					class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-white transition-colors"
+					aria-label="Light mode"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
+						/>
+					</svg>
+				</button>
+				<button
+					class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-600 bg-white transition-colors shadow-sm"
+					aria-label="Dark mode"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"
+						/>
+					</svg>
+				</button>
+				<button
+					class="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-white transition-colors"
+					aria-label="System mode"
+				>
+					<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"
+						/>
+					</svg>
+				</button>
+			</div>
+
 			<div class="flex items-center gap-3 px-4 py-3 bg-slate-50 rounded-2xl">
 				<div
 					class="w-9 h-9 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600 font-bold text-sm uppercase"
@@ -236,7 +261,7 @@
 	<main class="flex-1 ml-0 lg:ml-72 flex flex-col min-h-screen">
 		<!-- Top Navigation Header -->
 		<header
-			class="h-20 bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between px-6 lg:px-10"
+			class="h-20 bg-white border-b border-slate-100 sticky top-0 z-20 flex items-center justify-between px-6 lg:px-10"
 		>
 			<!-- Mobile Menu Toggle -->
 			<button aria-label="Toggle Menu" class="lg:hidden text-slate-500 hover:text-slate-800 p-2 rounded-lg bg-slate-50">
@@ -250,9 +275,9 @@
 				>
 			</button>
 
-			<!-- Global Search Bar Placeholder -->
-			<div class="hidden sm:flex items-center relative w-96 ml-4 lg:ml-0">
-				<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+			<!-- Global Search Bar -->
+			<div class="hidden sm:flex items-center relative flex-1 max-w-md ml-4 lg:ml-0">
+				<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
 					<svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 						><path
 							stroke-linecap="round"
@@ -264,17 +289,64 @@
 				</div>
 				<input
 					type="text"
-					placeholder="Search anything..."
-					class="block w-full pl-10 pr-3 py-2.5 bg-slate-50 border-transparent rounded-xl text-sm placeholder-slate-400 focus:border-emerald-500 focus:bg-white focus:ring-4 focus:ring-emerald-500/10 transition-all outline-none text-slate-700"
+					placeholder="Cari apapun..."
+					class="block w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 focus:border-slate-300 focus:bg-white focus:ring-0 transition-all outline-none text-slate-700"
 				/>
 			</div>
 
 			<!-- Header Right Actions -->
-			<div class="flex items-center gap-4">
+			<div class="flex items-center gap-3">
+				<button
+					class="hidden sm:flex items-center gap-2 px-4 py-2.5 bg-slate-900 text-white rounded-xl text-sm font-medium hover:bg-slate-800 transition-colors"
+				>
+					Buat
+				</button>
+				
+				<a
+					href="/admin/distribusi"
+					aria-label="Distribusi pending"
+					class="relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors {$page.data.pendingDistribusi > 0 ? 'text-amber-500 hover:bg-amber-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"
+						/>
+					</svg>
+					{#if $page.data.pendingDistribusi > 0}
+						<span class="absolute -top-1 -right-1 flex h-5 w-5">
+							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+							<span class="relative inline-flex rounded-full h-5 w-5 bg-amber-500 text-[10px] font-bold text-white items-center justify-center">{$page.data.pendingDistribusi}</span>
+						</span>
+					{/if}
+				</a>
+
 				<a
 					href="/admin/retur"
-					aria-label="View notifications"
-					class="w-10 h-10 rounded-full flex items-center justify-center transition-colors relative {$page.data.pendingRetur > 0 ? 'text-orange-500 hover:bg-orange-50' : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50'}"
+					aria-label="Retur pending"
+					class="relative w-10 h-10 rounded-xl flex items-center justify-center transition-colors {$page.data.pendingRetur > 0 ? 'text-orange-500 hover:bg-orange-50' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"
+						/>
+					</svg>
+					{#if $page.data.pendingRetur > 0}
+						<span class="absolute -top-1 -right-1 flex h-5 w-5">
+							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+							<span class="relative inline-flex rounded-full h-5 w-5 bg-orange-500 text-[10px] font-bold text-white items-center justify-center">{$page.data.pendingRetur}</span>
+						</span>
+					{/if}
+				</a>
+				
+				<button
+					aria-label="Notifications"
+					class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors text-slate-400 hover:text-slate-600 hover:bg-slate-50"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 						><path
@@ -284,17 +356,25 @@
 							d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
 						></path></svg
 					>
-					{#if $page.data.pendingRetur > 0}
-						<span class="absolute -top-1 -right-1 flex h-4 w-4">
-							<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-							<span class="relative inline-flex rounded-full h-4 w-4 bg-red-500 text-[9px] font-bold text-white items-center justify-center">{$page.data.pendingRetur}</span>
-						</span>
-					{/if}
-				</a>
-				<div class="hidden sm:block h-6 w-px bg-slate-200"></div>
+				</button>
+
+				<button
+					aria-label="Messages"
+					class="w-10 h-10 rounded-xl flex items-center justify-center transition-colors text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+				>
+					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+						><path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+						></path></svg
+					>
+				</button>
+
 				<div class="relative">
 					<button 
-						class="flex items-center gap-3 cursor-pointer p-1 rounded-full hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+						class="flex items-center gap-3 cursor-pointer p-1 rounded-xl hover:bg-slate-50 transition-colors focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2"
 						on:click|stopPropagation={toggleProfile}
 						aria-label="User menu"
 						aria-expanded={isProfileOpen}
