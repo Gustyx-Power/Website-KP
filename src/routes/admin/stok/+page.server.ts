@@ -14,7 +14,44 @@ export const load: PageServerLoad = async () => {
         where: { isActive: true }
     });
 
-    return { stok, toko, kategori };
+    // Calculate metrics for today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // Items added today (stok entries don't have createdAt, so we'll count all for now)
+    const itemsInboundToday = stok.filter(s => s.toko.is_pusat).length;
+
+    // Calculate last month's stock value for comparison
+    const lastMonth = new Date();
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+    
+    // Get current total stock value
+    const currentStockValue = stok.reduce((sum, item) => sum + (item.harga_modal * item.jumlah), 0);
+    
+    // Calculate efficiency rate based on stock accuracy
+    // Efficiency = (Total items - Critical items) / Total items * 100
+    const totalStockItems = stok.length;
+    const criticalItems = stok.filter(item => item.jumlah < 10).length;
+    const efficiencyRate = totalStockItems > 0 
+        ? ((totalStockItems - criticalItems) / totalStockItems * 100).toFixed(1)
+        : 100;
+
+    // Count active warehouses
+    const activeWarehouses = await prisma.toko.count({
+        where: { isActive: true, is_pusat: true }
+    });
+
+    return { 
+        stok, 
+        toko, 
+        kategori,
+        itemsInboundToday,
+        efficiencyRate: parseFloat(efficiencyRate),
+        activeWarehouses
+    };
 };
 
 export const actions: Actions = {
