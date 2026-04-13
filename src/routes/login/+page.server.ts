@@ -9,7 +9,27 @@ export const load: PageServerLoad = async ({ locals }) => {
 	if (locals.user) {
 		throw redirect(303, '/');
 	}
-	return {};
+
+	// Get active users count and recent users for avatars
+	const activeUsers = await prisma.user.findMany({
+		where: { isActive: true },
+		select: {
+			id: true,
+			name: true,
+			role: true
+		},
+		orderBy: { createdAt: 'desc' },
+		take: 3
+	});
+
+	const totalActiveUsers = await prisma.user.count({
+		where: { isActive: true }
+	});
+
+	return {
+		activeUsers,
+		totalActiveUsers
+	};
 };
 
 export const actions: Actions = {
