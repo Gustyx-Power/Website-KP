@@ -177,3 +177,33 @@ model Retur {
   @@index([id_kategori])
   @@index([tanggal])
 }
+
+// ──────────────────────────────────────────────
+// AUDIT LOG (Tracking semua aktivitas)
+// ──────────────────────────────────────────────
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  timestamp   DateTime @default(now())
+  userId      String
+  userName    String // Denormalized untuk performa
+  userRole    String
+  action      String // INBOUND, PENJUALAN, DISTRIBUSI, RETUR, UPDATE_STOK, DELETE
+  entity      String // STOK, PENJUALAN, DISTRIBUSI, RETUR, USER, TOKO, KATEGORI
+  entityId    String? // ID dari entity yang diubah
+  tokoId      Int?
+  tokoName    String? // Denormalized
+  kategoriId  Int?
+  kategoriName String? // Denormalized
+  oldValue    String? // JSON string untuk nilai lama
+  newValue    String? // JSON string untuk nilai baru
+  description String // Deskripsi human-readable
+  ipAddress   String?
+  userAgent   String?
+
+  @@index([timestamp])
+  @@index([userId])
+  @@index([action])
+  @@index([entity])
+  @@index([tokoId])
+}
