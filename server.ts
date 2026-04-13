@@ -1,12 +1,10 @@
 import { PrismaClient } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
 import { hash } from '@node-rs/argon2';
-import pg from 'pg';
 
-// Use the same PrismaPg adapter pattern as the main SvelteKit app
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+// Prisma client for SQLite
+const prisma = new PrismaClient({
+	log: ['error', 'warn'],
+});
 
 const PORT = 5000;
 const MASTER_KEY = 'IMDSystemCore123';
