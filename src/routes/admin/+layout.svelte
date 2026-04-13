@@ -1,8 +1,9 @@
 <script lang="ts">
 	import { page } from '$app/stores';
-	import { scale, fade } from 'svelte/transition';
+	import { scale, fade, fly } from 'svelte/transition';
 	
 	let isProfileOpen = false;
+	let isMobileMenuOpen = false;
 	
 	function toggleProfile() {
 		isProfileOpen = !isProfileOpen;
@@ -11,9 +12,26 @@
 	function closeProfile() {
 		isProfileOpen = false;
 	}
+	
+	function toggleMobileMenu() {
+		isMobileMenuOpen = !isMobileMenuOpen;
+	}
+	
+	function closeMobileMenu() {
+		isMobileMenuOpen = false;
+	}
 </script>
 
 <svelte:window on:click={() => { if(isProfileOpen) isProfileOpen = false; }} />
+
+<!-- Mobile Menu Overlay -->
+{#if isMobileMenuOpen}
+	<div 
+		class="fixed inset-0 bg-black/50 z-40 lg:hidden"
+		on:click={closeMobileMenu}
+		transition:fade={{ duration: 200 }}
+	></div>
+{/if}
 
 <div
 	class="font-sans min-h-screen bg-[#f7f9fb] flex text-[#2c3437] selection:bg-[#d1e4ea] selection:text-[#1a3d47]"
@@ -21,7 +39,7 @@
 >
 	<!-- Sidebar -->
 	<aside
-		class="w-72 bg-[#f0f4f7] min-h-screen hidden lg:flex flex-col fixed inset-y-0 left-0 z-10"
+		class="w-72 bg-[#f0f4f7] min-h-screen flex-col fixed inset-y-0 left-0 z-50 transition-transform duration-300 {isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} lg:flex"
 	>
 		<!-- Logo Area -->
 		<div class="h-20 flex items-center px-8">
@@ -222,10 +240,14 @@
 	<main class="flex-1 ml-0 lg:ml-72 flex flex-col min-h-screen">
 		<!-- Top Navigation Header -->
 		<header
-			class="h-20 bg-[#ffffff]/80 backdrop-blur-xl sticky top-0 z-20 flex items-center justify-between px-6 lg:px-10"
+			class="h-16 lg:h-20 bg-[#ffffff]/80 backdrop-blur-xl sticky top-0 z-30 flex items-center justify-between px-4 lg:px-10"
 		>
 			<!-- Mobile Menu Toggle -->
-			<button aria-label="Toggle Menu" class="lg:hidden text-stone-500 hover:text-stone-800 p-2 rounded-xl bg-stone-100/50">
+			<button 
+				on:click={toggleMobileMenu}
+				aria-label="Toggle Menu" 
+				class="lg:hidden text-[#5f6b6f] hover:text-[#2c3437] p-2 rounded-xl bg-[#e4e9ed] transition-colors"
+			>
 				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 					><path
 						stroke-linecap="round"
@@ -237,7 +259,7 @@
 			</button>
 
 			<!-- Global Search Bar -->
-			<div class="hidden sm:flex items-center relative flex-1 max-w-md ml-4 lg:ml-0">
+			<div class="hidden md:flex items-center relative flex-1 max-w-md ml-4 lg:ml-0">
 				<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
 					<svg class="w-5 h-5 text-stone-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 						><path
@@ -256,11 +278,11 @@
 			</div>
 
 			<!-- Header Right Actions -->
-			<div class="flex items-center gap-3">
+			<div class="flex items-center gap-2 lg:gap-3">
 				<a
 					href="/admin/distribusi"
 					aria-label="Distribusi pending"
-					class="relative w-10 h-10 rounded-2xl flex items-center justify-center transition-colors {$page.data.pendingDistribusi > 0 ? 'text-amber-500 hover:bg-amber-50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100/50'}"
+					class="relative w-9 h-9 lg:w-10 lg:h-10 rounded-2xl flex items-center justify-center transition-colors {$page.data.pendingDistribusi > 0 ? 'text-amber-500 hover:bg-amber-50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100/50'}"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -281,7 +303,7 @@
 				<a
 					href="/admin/retur"
 					aria-label="Retur pending"
-					class="relative w-10 h-10 rounded-2xl flex items-center justify-center transition-colors {$page.data.pendingRetur > 0 ? 'text-orange-500 hover:bg-orange-50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100/50'}"
+					class="relative w-9 h-9 lg:w-10 lg:h-10 rounded-2xl flex items-center justify-center transition-colors {$page.data.pendingRetur > 0 ? 'text-orange-500 hover:bg-orange-50' : 'text-stone-400 hover:text-stone-600 hover:bg-stone-100/50'}"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path
@@ -301,7 +323,7 @@
 				
 				<button
 					aria-label="Notifications"
-					class="w-10 h-10 rounded-2xl flex items-center justify-center transition-colors text-stone-400 hover:text-stone-600 hover:bg-stone-100/50"
+					class="hidden sm:flex w-9 h-9 lg:w-10 lg:h-10 rounded-2xl items-center justify-center transition-colors text-stone-400 hover:text-stone-600 hover:bg-stone-100/50"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 						><path
@@ -315,7 +337,7 @@
 
 				<button
 					aria-label="Messages"
-					class="w-10 h-10 rounded-2xl flex items-center justify-center transition-colors text-stone-400 hover:text-stone-600 hover:bg-stone-100/50"
+					class="hidden sm:flex w-9 h-9 lg:w-10 lg:h-10 rounded-2xl items-center justify-center transition-colors text-stone-400 hover:text-stone-600 hover:bg-stone-100/50"
 				>
 					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
 						><path
@@ -396,7 +418,7 @@
 		</header>
 
 		<!-- Route Content Slot -->
-		<div class="p-6 md:p-10 flex-1 max-w-[1400px] w-full mx-auto animate-fade-in">
+		<div class="p-4 md:p-6 lg:p-10 flex-1 max-w-[1400px] w-full mx-auto animate-fade-in">
 			<slot />
 		</div>
 	</main>

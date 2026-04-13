@@ -71,26 +71,21 @@
 </div>
 
 <!-- Header Section -->
-<div class="mb-8">
-	<h1 class="text-4xl font-bold text-[#2c3437] mb-2" style="font-family: 'Manrope', sans-serif;">
+<div class="mb-6 lg:mb-8">
+	<h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">
 		Selamat datang kembali, Admin Pusat
 	</h1>
-	<div class="flex items-center gap-2 text-sm">
-		<span class="text-[#5f6b6f]">Status operasional</span>
-		<span class="px-3 py-1 bg-[#c8e6d7] text-[#1f3329] rounded-full text-xs font-semibold uppercase tracking-wide">Stabil</span>
-		<span class="text-[#5f6b6f]">hari ini.</span>
-	</div>
 </div>
 
 <!-- Action Buttons -->
-<div class="flex gap-3 mb-8">
-	<button class="px-5 py-2.5 bg-[#ffffff] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#e4e9ed] transition-all flex items-center gap-2">
+<div class="flex flex-col sm:flex-row gap-3 mb-6 lg:mb-8">
+	<button class="px-4 md:px-5 py-2.5 bg-[#ffffff] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#e4e9ed] transition-all flex items-center justify-center gap-2">
 		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 		</svg>
 		Ekspor Laporan
 	</button>
-	<a href="/admin/distribusi/buat" class="px-5 py-2.5 bg-gradient-to-r from-[#306677] to-[#225a6a] text-white rounded-md text-sm font-semibold hover:shadow-lg transition-all flex items-center gap-2">
+	<a href="/admin/distribusi/buat" class="px-4 md:px-5 py-2.5 bg-gradient-to-r from-[#306677] to-[#225a6a] text-white rounded-md text-sm font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2">
 		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
 		</svg>
@@ -102,15 +97,15 @@
 	<!-- Left Column - Main Content -->
 	<div class="lg:col-span-2 space-y-6">
 		<!-- Stok Gudang Pusat Card -->
-		<div class="bg-[#ffffff] rounded-xl p-6">
-			<div class="flex items-start justify-between mb-6">
-				<div>
-					<h2 class="text-sm uppercase tracking-wider text-[#5f6b6f] font-semibold mb-2">STOK GUDANG PUSAT</h2>
+		<div class="bg-[#ffffff] rounded-xl p-5 md:p-6">
+			<div class="flex flex-col sm:flex-row items-start justify-between mb-6 gap-4">
+				<div class="flex-1">
+					<h2 class="text-xs md:text-sm uppercase tracking-wider text-[#5f6b6f] font-semibold mb-2">STOK GUDANG PUSAT</h2>
 					<div class="flex items-baseline gap-2">
-						<span class="text-5xl font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">
+						<span class="text-3xl md:text-4xl lg:text-5xl font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">
 							{Math.round($totalStokPusat).toLocaleString('id-ID')}
 						</span>
-						<span class="text-lg text-[#5f6b6f]">Unit</span>
+						<span class="text-base md:text-lg text-[#5f6b6f]">Unit</span>
 					</div>
 					<div class="flex items-center gap-2 mt-2">
 						<span class="px-2 py-1 bg-[#c8e6d7] text-[#1f3329] rounded-full text-xs font-semibold">+12% Efisiensi</span>
@@ -122,7 +117,7 @@
 					<span class="w-8 h-8 rounded-full bg-[#e4e9ed] flex items-center justify-center text-xs font-semibold text-[#5f6b6f]">+4</span>
 				</div>
 			</div>
-			<div class="flex gap-3">
+			<div class="flex flex-col sm:flex-row gap-3">
 				<button class="px-4 py-2 bg-[#306677] text-white rounded-md text-sm font-semibold hover:bg-[#225a6a] transition-colors">
 					Kelola Stok
 				</button>
@@ -133,7 +128,7 @@
 		</div>
 
 		<!-- Metrics Grid -->
-		<div class="grid grid-cols-3 gap-4">
+		<div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
 			<!-- Cabang Toko -->
 			<div class="bg-[#ffffff] rounded-xl p-5">
 				<div class="w-10 h-10 rounded-lg bg-[#d1e4ea] flex items-center justify-center mb-3">
@@ -178,13 +173,13 @@
 		</div>
 
 		<!-- Tren Penjualan Chart -->
-		<div class="bg-[#ffffff] rounded-xl p-6">
-			<div class="flex items-center justify-between mb-6">
+		<div class="bg-[#ffffff] rounded-xl p-5 md:p-6">
+			<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-3">
 				<div>
 					<h3 class="text-base font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">Tren Penjualan</h3>
-					<p class="text-sm text-[#5f6b6f]">Performance over the last 7 days</p>
+					<p class="text-xs md:text-sm text-[#5f6b6f]">Performance over the last 7 days</p>
 				</div>
-				<select class="px-3 py-2 bg-[#e4e9ed] text-[#2c3437] rounded-md text-sm border-none focus:ring-2 focus:ring-[#306677]/20 outline-none">
+				<select class="w-full sm:w-auto px-3 py-2 bg-[#e4e9ed] text-[#2c3437] rounded-md text-sm border-none focus:ring-2 focus:ring-[#306677]/20 outline-none">
 					<option>Last 7 Days</option>
 					<option>Last 30 Days</option>
 					<option>Last 90 Days</option>
@@ -192,7 +187,7 @@
 			</div>
 
 			<!-- Chart -->
-			<div class="relative h-64 mb-4">
+			<div class="relative h-48 md:h-64 mb-4">
 				<div class="absolute inset-0 flex items-end justify-between gap-3 px-2">
 					{#each data.salesByDay as day, i}
 						{@const height = ((day._sum.total_uang || 0) / maxSales) * 100}
@@ -214,7 +209,8 @@
 									{formatRupiah(day._sum.total_uang || 0)}
 								</div>
 							</div>
-							<p class="text-xs text-[#5f6b6f] font-medium uppercase">{getDayLabel(day.tanggal)}</p>
+							<p class="text-xs text-[#5f6b6f] font-medium uppercase hidden sm:block">{getDayLabel(day.tanggal)}</p>
+							<p class="text-[10px] text-[#5f6b6f] font-medium uppercase sm:hidden">{getDayLabel(day.tanggal).substring(0, 1)}</p>
 						</div>
 					{/each}
 				</div>

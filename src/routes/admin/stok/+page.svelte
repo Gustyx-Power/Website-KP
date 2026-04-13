@@ -34,37 +34,38 @@
 </div>
 
 <!-- Header Section -->
-<div class="mb-8">
-	<h1 class="text-4xl font-bold text-[#2c3437] mb-2" style="font-family: 'Manrope', sans-serif;">
+<div class="mb-6 lg:mb-8">
+	<h1 class="text-2xl md:text-3xl lg:text-4xl font-bold text-[#2c3437] mb-2" style="font-family: 'Manrope', sans-serif;">
 		Inbound Stok Pusat
 	</h1>
-	<p class="text-[#5f6b6f] text-base max-w-2xl">
+	<p class="text-[#5f6b6f] text-sm md:text-base max-w-2xl">
 		Daftarkan dan validasi kedatangan inventaris baru di gudang pusat. Pastikan semua nilai modal diperbarui untuk perhitungan margin yang akurat.
 	</p>
 </div>
 
 <!-- Action Buttons -->
-<div class="flex gap-3 mb-8">
-	<button class="px-5 py-2.5 bg-[#ffffff] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#e4e9ed] transition-all flex items-center gap-2">
+<div class="flex gap-3 mb-6 lg:mb-8">
+	<button class="px-4 md:px-5 py-2.5 bg-[#ffffff] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#e4e9ed] transition-all flex items-center gap-2">
 		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 		</svg>
-		Ekspor CSV
+		<span class="hidden sm:inline">Ekspor CSV</span>
+		<span class="sm:hidden">Ekspor</span>
 	</button>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 	<!-- Left Column - Form -->
 	<div class="lg:col-span-1">
-		<div class="bg-[#ffffff] rounded-xl p-6">
-			<div class="flex items-center gap-3 mb-6">
-				<div class="w-12 h-12 rounded-lg bg-[#d1e4ea] flex items-center justify-center">
-					<svg class="w-6 h-6 text-[#306677]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+		<div class="bg-[#ffffff] rounded-xl p-5 md:p-6">
+			<div class="flex items-center gap-3 mb-5 md:mb-6">
+				<div class="w-10 h-10 md:w-12 md:h-12 rounded-lg bg-[#d1e4ea] flex items-center justify-center">
+					<svg class="w-5 h-5 md:w-6 md:h-6 text-[#306677]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
 					</svg>
 				</div>
 				<div>
-					<h2 class="text-lg font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">Tambah Stok Masuk</h2>
+					<h2 class="text-base md:text-lg font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">Tambah Stok Masuk</h2>
 				</div>
 			</div>
 
@@ -171,9 +172,9 @@
 
 	<!-- Right Column - Logs -->
 	<div class="lg:col-span-2">
-		<div class="bg-[#ffffff] rounded-xl p-6">
-			<div class="flex items-center justify-between mb-6">
-				<h2 class="text-lg font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">Recent Inventory Logs</h2>
+		<div class="bg-[#ffffff] rounded-xl p-5 md:p-6">
+			<div class="flex items-center justify-between mb-5 md:mb-6">
+				<h2 class="text-base md:text-lg font-bold text-[#2c3437]" style="font-family: 'Manrope', sans-serif;">Recent Inventory Logs</h2>
 				<div class="flex items-center gap-2">
 					<button class="w-8 h-8 rounded-lg hover:bg-[#e4e9ed] flex items-center justify-center transition-colors">
 						<svg class="w-5 h-5 text-[#5f6b6f]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -188,41 +189,83 @@
 				</div>
 			</div>
 
-			<!-- Table Header -->
-			<div class="grid grid-cols-12 gap-4 px-4 py-3 bg-[#f0f4f7] rounded-lg mb-2 text-xs font-semibold text-[#5f6b6f] uppercase tracking-wider">
-				<div class="col-span-2">ID Log</div>
-				<div class="col-span-3">Cabang/Gudang</div>
-				<div class="col-span-3">Kategori Produk</div>
-				<div class="col-span-2">Sisa Fisik Stok</div>
-				<div class="col-span-2">Harga Modal</div>
+			<!-- Desktop Table View -->
+			<div class="hidden md:block">
+				<!-- Table Header -->
+				<div class="grid grid-cols-12 gap-4 px-4 py-3 bg-[#f0f4f7] rounded-lg mb-2 text-xs font-semibold text-[#5f6b6f] uppercase tracking-wider">
+					<div class="col-span-2">ID Log</div>
+					<div class="col-span-3">Cabang/Gudang</div>
+					<div class="col-span-3">Kategori Produk</div>
+					<div class="col-span-2">Sisa Fisik Stok</div>
+					<div class="col-span-2">Harga Modal</div>
+				</div>
+
+				<!-- Table Rows -->
+				<div class="space-y-2">
+					{#each data.stok as item}
+						<div class="grid grid-cols-12 gap-4 px-4 py-4 hover:bg-[#f0f4f7] rounded-lg transition-colors items-center">
+							<div class="col-span-2">
+								<p class="text-sm text-[#5f6b6f] font-mono">#{item.id.toString().padStart(4, '0')}</p>
+							</div>
+							<div class="col-span-3">
+								<div class="flex items-center gap-2">
+									<span class="px-2 py-1 bg-{item.toko.is_pusat ? '[#d1e4ea]' : '[#d8dfe8]'} text-{item.toko.is_pusat ? '[#306677]' : '[#506076]'} rounded text-xs font-semibold uppercase">
+										{item.toko.is_pusat ? 'PUSAT' : 'CABANG'}
+									</span>
+									<span class="text-sm font-semibold text-[#2c3437] truncate">
+										{item.toko.nama_toko}
+									</span>
+								</div>
+							</div>
+							<div class="col-span-3">
+								<p class="text-sm font-semibold text-[#2c3437]">{item.kategori.nama_kategori}</p>
+							</div>
+							<div class="col-span-2">
+								<p class="text-sm font-bold text-[#2c3437]">{item.jumlah}</p>
+								<p class="text-xs text-[#5f6b6f]">pcs</p>
+							</div>
+							<div class="col-span-2">
+								<p class="text-sm font-bold text-[#2c3437]">{formatRupiah(item.harga_modal)}</p>
+							</div>
+						</div>
+					{:else}
+						<div class="py-12 text-center">
+							<svg class="w-16 h-16 mx-auto text-[#acb3b7] mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+								<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+							</svg>
+							<p class="text-[#5f6b6f]">Belum ada data stok</p>
+						</div>
+					{/each}
+				</div>
 			</div>
 
-			<!-- Table Rows -->
-			<div class="space-y-2">
+			<!-- Mobile Card View -->
+			<div class="md:hidden space-y-3">
 				{#each data.stok as item}
-					<div class="grid grid-cols-12 gap-4 px-4 py-4 hover:bg-[#f0f4f7] rounded-lg transition-colors items-center">
-						<div class="col-span-2">
-							<p class="text-sm text-[#5f6b6f] font-mono">#{item.id.toString().padStart(4, '0')}</p>
-						</div>
-						<div class="col-span-3">
+					<div class="bg-[#f0f4f7] rounded-lg p-4">
+						<div class="flex items-start justify-between mb-3">
 							<div class="flex items-center gap-2">
 								<span class="px-2 py-1 bg-{item.toko.is_pusat ? '[#d1e4ea]' : '[#d8dfe8]'} text-{item.toko.is_pusat ? '[#306677]' : '[#506076]'} rounded text-xs font-semibold uppercase">
 									{item.toko.is_pusat ? 'PUSAT' : 'CABANG'}
 								</span>
-								<span class="text-sm font-semibold text-[#2c3437] truncate">
-									{item.toko.nama_toko}
-								</span>
+								<p class="text-xs text-[#5f6b6f] font-mono">#{item.id.toString().padStart(4, '0')}</p>
 							</div>
 						</div>
-						<div class="col-span-3">
-							<p class="text-sm font-semibold text-[#2c3437]">{item.kategori.nama_kategori}</p>
-						</div>
-						<div class="col-span-2">
-							<p class="text-sm font-bold text-[#2c3437]">{item.jumlah}</p>
-							<p class="text-xs text-[#5f6b6f]">pcs</p>
-						</div>
-						<div class="col-span-2">
-							<p class="text-sm font-bold text-[#2c3437]">{formatRupiah(item.harga_modal)}</p>
+						<div class="space-y-2">
+							<div>
+								<p class="text-xs text-[#5f6b6f] uppercase tracking-wider font-semibold mb-1">Kategori Produk</p>
+								<p class="text-sm font-semibold text-[#2c3437]">{item.kategori.nama_kategori}</p>
+							</div>
+							<div class="grid grid-cols-2 gap-3">
+								<div>
+									<p class="text-xs text-[#5f6b6f] uppercase tracking-wider font-semibold mb-1">Stok</p>
+									<p class="text-base font-bold text-[#2c3437]">{item.jumlah} <span class="text-xs font-normal text-[#5f6b6f]">pcs</span></p>
+								</div>
+								<div>
+									<p class="text-xs text-[#5f6b6f] uppercase tracking-wider font-semibold mb-1">Harga Modal</p>
+									<p class="text-base font-bold text-[#2c3437]">{formatRupiah(item.harga_modal)}</p>
+								</div>
+							</div>
 						</div>
 					</div>
 				{:else}
@@ -256,10 +299,10 @@
 </div>
 
 <!-- Metrics Cards -->
-<div class="grid grid-cols-4 gap-6 mt-6">
-	<div class="bg-[#ffffff] rounded-xl p-6">
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mt-6">
+	<div class="bg-[#ffffff] rounded-xl p-5 md:p-6">
 		<p class="text-xs uppercase tracking-wider text-[#5f6b6f] font-semibold mb-2">Total Nilai Stok</p>
-		<p class="text-3xl font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">
+		<p class="text-2xl md:text-3xl font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">
 			{formatRupiah(totalStockValue)}
 		</p>
 		<p class="text-xs text-[#3f6754]">
@@ -273,9 +316,9 @@
 		</p>
 	</div>
 
-	<div class="bg-[#ffffff] rounded-xl p-6">
+	<div class="bg-[#ffffff] rounded-xl p-5 md:p-6">
 		<p class="text-xs uppercase tracking-wider text-[#5f6b6f] font-semibold mb-2">Stok Kritis</p>
-		<p class="text-3xl font-bold text-{criticalStock > 0 ? '[#ba1a1a]' : '[#3f6754]'} mb-1" style="font-family: 'Manrope', sans-serif;">
+		<p class="text-2xl md:text-3xl font-bold text-{criticalStock > 0 ? '[#ba1a1a]' : '[#3f6754]'} mb-1" style="font-family: 'Manrope', sans-serif;">
 			{criticalStock}
 		</p>
 		<p class="text-xs text-[#5f6b6f]">
@@ -283,17 +326,17 @@
 		</p>
 	</div>
 
-	<div class="bg-[#ffffff] rounded-xl p-6">
+	<div class="bg-[#ffffff] rounded-xl p-5 md:p-6">
 		<p class="text-xs uppercase tracking-wider text-[#5f6b6f] font-semibold mb-2">Total Item Stok</p>
-		<p class="text-3xl font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">
+		<p class="text-2xl md:text-3xl font-bold text-[#2c3437] mb-1" style="font-family: 'Manrope', sans-serif;">
 			{data.itemsInboundToday.toLocaleString('id-ID')}
 		</p>
 		<p class="text-xs text-[#5f6b6f]">Dari {data.activeWarehouses} gudang aktif</p>
 	</div>
 
-	<div class="bg-[#ffffff] rounded-xl p-6">
+	<div class="bg-[#ffffff] rounded-xl p-5 md:p-6">
 		<p class="text-xs uppercase tracking-wider text-[#5f6b6f] font-semibold mb-2">Tingkat Efisiensi</p>
-		<p class="text-3xl font-bold text-[#306677] mb-1" style="font-family: 'Manrope', sans-serif;">
+		<p class="text-2xl md:text-3xl font-bold text-[#306677] mb-1" style="font-family: 'Manrope', sans-serif;">
 			{data.efficiencyRate}%
 		</p>
 		<p class="text-xs text-[#5f6b6f]">Akurasi validasi stok</p>
