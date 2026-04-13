@@ -1,14 +1,8 @@
-import { PrismaClient, Role } from '@prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
-import pg from 'pg';
+import { PrismaClient } from '@prisma/client';
 import { hash } from '@node-rs/argon2';
 
-// Setup koneksi menggunakan adapter yang sama dengan proyek
-const pool = new pg.Pool({
-	connectionString: 'postgresql://postgres:gusti717@localhost:5432/db_imd?schema=public'
-});
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+// Simple Prisma client for SQLite
+const prisma = new PrismaClient();
 
 const ARGON2_OPTIONS = {
 	memoryCost: 19456,
@@ -79,7 +73,7 @@ async function main() {
 			email: 'owner@cvimdi.com',
 			password: passwordHash,
 			name: 'Owner IMD',
-			role: Role.OWNER,
+			role: 'OWNER',
 			tokoId: null
 		}
 	});
@@ -89,7 +83,7 @@ async function main() {
 			email: 'admin@cvimdi.com',
 			password: passwordHash,
 			name: 'Admin Pusat',
-			role: Role.ADMIN,
+			role: 'ADMIN',
 			tokoId: gudangPusat.id
 		}
 	});
@@ -99,7 +93,7 @@ async function main() {
 			email: 'kasir.a@cvimdi.com',
 			password: passwordHash,
 			name: 'Kasir Toko A',
-			role: Role.KASIR,
+			role: 'KASIR',
 			tokoId: tokoA.id
 		}
 	});
@@ -109,7 +103,7 @@ async function main() {
 			email: 'kasir.b@cvimdi.com',
 			password: passwordHash,
 			name: 'Kasir Toko B',
-			role: Role.KASIR,
+			role: 'KASIR',
 			tokoId: tokoB.id
 		}
 	});
@@ -119,7 +113,7 @@ async function main() {
 			email: 'kasir.c@cvimdi.com',
 			password: passwordHash,
 			name: 'Kasir Toko C',
-			role: Role.KASIR,
+			role: 'KASIR',
 			tokoId: tokoC.id
 		}
 	});
@@ -157,5 +151,4 @@ main()
 	})
 	.finally(async () => {
 		await prisma.$disconnect();
-		await pool.end();
 	});
