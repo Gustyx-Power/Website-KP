@@ -3,29 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-}
-
-// ──────────────────────────────────────────────
-// ENUMS
-// ──────────────────────────────────────────────
-
-enum Role {
-  OWNER
-  ADMIN
-  KASIR
-}
-
-enum StatusDistribusi {
-  PENDING
-  DIKIRIM
-  DITERIMA
-}
-
-enum StatusRetur {
-  PENDING
-  DISETUJUI
-  DITOLAK
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // ──────────────────────────────────────────────
@@ -33,11 +12,11 @@ enum StatusRetur {
 // ──────────────────────────────────────────────
 
 model User {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   email     String   @unique
   password  String
   name      String
-  role      Role     @default(KASIR)
+  role      String   @default("KASIR") // OWNER, ADMIN, KASIR
   tokoId    Int? // Relasi opsional: KASIR diikat ke toko tertentu
   isActive  Boolean  @default(true) // Soft-disable akun
   createdAt DateTime @default(now())
@@ -55,7 +34,7 @@ model User {
 }
 
 model Session {
-  id        String   @id @default(uuid())
+  id        String   @id @default(cuid())
   userId    String
   expiresAt DateTime
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -92,9 +71,9 @@ model Kategori {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  stok      Stok[]
-  penjualan Penjualan[]
-  retur     Retur[]
+  stok           Stok[]
+  penjualan      Penjualan[]
+  retur          Retur[]
   distribusiItem DistribusiItem[]
 }
 
@@ -122,13 +101,13 @@ model Stok {
 // ──────────────────────────────────────────────
 
 model Distribusi {
-  id            Int              @id @default(autoincrement())
-  tanggal       DateTime         @default(now())
-  id_toko_asal  Int // Gudang Pusat
+  id             Int      @id @default(autoincrement())
+  tanggal        DateTime @default(now())
+  id_toko_asal   Int // Gudang Pusat
   id_toko_tujuan Int // Toko Cabang tujuan
-  status        StatusDistribusi @default(PENDING)
-  keterangan    String?
-  createdById   String // Admin yang membuat
+  status         String   @default("PENDING") // PENDING, DIKIRIM, DITERIMA
+  keterangan     String?
+  createdById    String // Admin yang membuat
 
   tokoAsal   Toko @relation("DistribusiAsal", fields: [id_toko_asal], references: [id], onDelete: Restrict)
   tokoTujuan Toko @relation("DistribusiTujuan", fields: [id_toko_tujuan], references: [id], onDelete: Restrict)
@@ -142,10 +121,10 @@ model Distribusi {
 }
 
 model DistribusiItem {
-  id            Int @id @default(autoincrement())
-  distribusiId  Int
-  id_kategori   Int
-  jumlah        Int // Qty yang didistribusikan
+  id           Int @id @default(autoincrement())
+  distribusiId Int
+  id_kategori  Int
+  jumlah       Int // Qty yang didistribusikan
 
   distribusi Distribusi @relation(fields: [distribusiId], references: [id], onDelete: Cascade)
   kategori   Kategori   @relation(fields: [id_kategori], references: [id], onDelete: Restrict)
@@ -181,11 +160,11 @@ model Penjualan {
 // ──────────────────────────────────────────────
 
 model Retur {
-  id          Int         @id @default(autoincrement())
-  tanggal     DateTime    @default(now())
+  id          Int      @id @default(autoincrement())
+  tanggal     DateTime @default(now())
   qty_retur   Int
   keterangan  String?
-  status      StatusRetur  @default(PENDING) // Flow approval
+  status      String   @default("PENDING") // PENDING, DISETUJUI, DITOLAK
   id_toko     Int
   id_kategori Int
   createdById String // Kasir/Admin yang input
