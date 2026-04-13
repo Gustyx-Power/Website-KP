@@ -121,9 +121,6 @@
 				<button class="px-4 py-2 bg-[#306677] text-white rounded-md text-sm font-semibold hover:bg-[#225a6a] transition-colors">
 					Kelola Stok
 				</button>
-				<button class="px-4 py-2 bg-[#e4e9ed] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#d8dfe8] transition-colors">
-					Lihat Audit
-				</button>
 			</div>
 		</div>
 
