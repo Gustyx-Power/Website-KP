@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
+import { createAuditLog } from '$lib/server/audit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -31,38 +32,63 @@ export const actions: Actions = {
             return fail(400, { error: 'qty_retur, id_toko, and id_kategori are required' });
         }
 
+        // Get toko and kategori info for audit
+        const toko = await prisma.toko.findUnique({ where: { id: id_toko } });
+        const kategori = await prisma.kategori.findUnique({ where: { id: id_kategori } });
+
 		// Apply Prisma explicit transaction
-		await prisma.$transaction([
-			// 1. Insert Retur with DISETUJUI status (admin created)
-			prisma.retur.create({
-				data: {
-					qty_retur,
-					keterangan,
-					id_toko,
-					id_kategori,
-					status: 'DISETUJUI',
-					createdById: locals.user?.id || ''
-				}
-			}),
+		const retur = await prisma.$transaction(async (tx) => {
+            // 1. Insert Retur with DISETUJUI status (admin created)
+            const newRetur = await tx.retur.create({
+                data: {
+                    qty_retur,
+                    keterangan,
+                    id_toko,
+                    id_kategori,
+                    status: 'DISETUJUI',
+                    createdById: locals.user?.id || ''
+                }
+            });
+            
             // 2. Increment Stok at central warehouse
-            prisma.stok.updateMany({
+            await tx.stok.updateMany({
                 where: { id_toko, id_kategori },
                 data: {
                     jumlah: { increment: qty_retur }
                 }
-            })
-        ]);
+            });
+            
+            return newRetur;
+        });
+
+        // Create audit log
+        await createAuditLog({
+            userId: locals.user?.id || '',
+            userName: locals.user?.name || 'Unknown',
+            userRole: locals.user?.role || 'ADMIN',
+            action: 'RETUR_CREATE',
+            entity: 'RETUR',
+            entityId: retur.id.toString(),
+            tokoId: id_toko,
+            tokoName: toko?.nama_toko,
+            kategoriId: id_kategori,
+            kategoriName: kategori?.nama_kategori,
+            newValue: { qty_retur, keterangan, status: 'DISETUJUI' },
+            description: `Membuat retur ${qty_retur} unit ${kategori?.nama_kategori} dari ${toko?.nama_toko}${keterangan ? `. Keterangan: ${keterangan}` : ''}`,
+            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+            userAgent: request.headers.get('user-agent') || undefined
+        });
 
         return { success: true };
     },
 
-	approve: async ({ request }) => {
+	approve: async ({ request, locals }) => {
 		const formData = await request.formData();
 		const returId = parseInt(formData.get('returId') as string);
 
 		const retur = await prisma.retur.findUnique({
 			where: { id: returId },
-			include: { toko: true }
+			include: { toko: true, kategori: true }
 		});
 
 		if (!retur) {
@@ -153,6 +179,25 @@ export const actions: Actions = {
 					}
 				});
 			}
+		});
+
+		// Create audit log
+		await createAuditLog({
+			userId: locals.user?.id || '',
+			userName: locals.user?.name || 'Unknown',
+			userRole: locals.user?.role || 'ADMIN',
+			action: 'RETUR_APPROVE',
+			entity: 'RETUR',
+			entityId: returId.toString(),
+			tokoId: retur.id_toko,
+			tokoName: retur.toko?.nama_toko,
+			kategoriId: retur.id_kategori,
+			kategoriName: retur.kategori?.nama_kategori,
+			oldValue: { status: 'PENDING' },
+			newValue: { status: 'DISETUJUI', qty_retur: retur.qty_retur },
+			description: `Menyetujui retur ${retur.qty_retur} unit ${retur.kategori?.nama_kategori} dari ${retur.toko?.nama_toko} ke ${gudangPusat.nama_toko}`,
+			ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+			userAgent: request.headers.get('user-agent') || undefined
 		});
 
 		return { success: true };

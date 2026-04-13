@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
 import { hashPassword } from '$lib/server/auth';
+import { createAuditLog } from '$lib/server/audit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -99,11 +100,36 @@ export const actions: Actions = {
             return fail(400, { error: 'Anda tidak bisa menghapus akun sendiri.' });
         }
 
+        // Get user info before deletion
+        const user = await prisma.user.findUnique({
+            where: { id },
+            include: { toko: true }
+        });
+
         // Soft delete
         await prisma.user.update({
             where: { id },
             data: { isActive: false }
         });
+
+        // Create audit log
+        if (user) {
+            await createAuditLog({
+                userId: locals.user?.id || '',
+                userName: locals.user?.name || 'Unknown',
+                userRole: locals.user?.role || 'ADMIN',
+                action: 'DELETE_USER',
+                entity: 'USER',
+                entityId: id,
+                tokoId: user.tokoId || undefined,
+                tokoName: user.toko?.nama_toko,
+                oldValue: { name: user.name, email: user.email, role: user.role, isActive: true },
+                newValue: { isActive: false },
+                description: `Menghapus user ${user.name} (${user.email}) dengan role ${user.role}${user.toko ? ` dari ${user.toko.nama_toko}` : ''}`,
+                ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+                userAgent: request.headers.get('user-agent') || undefined
+            });
+        }
 
         return { success: true };
     }

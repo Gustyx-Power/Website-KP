@@ -1,5 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
+import { createAuditLog } from '$lib/server/audit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -99,10 +100,13 @@ export const actions: Actions = {
         }
 
         try {
+            // Get toko tujuan info for audit
+            const tokoTujuan = await prisma.toko.findUnique({ where: { id: id_toko_tujuan } });
+
             // Create distribution with items in a transaction
-            await prisma.$transaction(async (tx) => {
+            const distribusi = await prisma.$transaction(async (tx) => {
                 // Create distribution
-                const distribusi = await tx.distribusi.create({
+                const newDistribusi = await tx.distribusi.create({
                     data: {
                         id_toko_asal: gudangPusat.id,
                         id_toko_tujuan,
@@ -117,7 +121,7 @@ export const actions: Actions = {
                     // Create distribution item
                     await tx.distribusiItem.create({
                         data: {
-                            distribusiId: distribusi.id,
+                            distribusiId: newDistribusi.id,
                             id_kategori: item.id_kategori,
                             jumlah: item.jumlah
                         }
@@ -170,6 +174,25 @@ export const actions: Actions = {
                         });
                     }
                 }
+                
+                return newDistribusi;
+            });
+
+            // Create audit log
+            const itemsSummary = items.map(item => `${item.jumlah} unit (Kategori ID: ${item.id_kategori})`).join(', ');
+            await createAuditLog({
+                userId: locals.user!.id,
+                userName: locals.user!.name,
+                userRole: locals.user!.role,
+                action: 'DISTRIBUSI_CREATE',
+                entity: 'DISTRIBUSI',
+                entityId: distribusi.id.toString(),
+                tokoId: id_toko_tujuan,
+                tokoName: tokoTujuan?.nama_toko,
+                newValue: { items, keterangan, status: 'DIKIRIM' },
+                description: `Membuat distribusi dari ${gudangPusat.nama_toko} ke ${tokoTujuan?.nama_toko}: ${itemsSummary}`,
+                ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+                userAgent: request.headers.get('user-agent') || undefined
             });
 
             throw redirect(303, '/admin/distribusi');

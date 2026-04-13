@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
+import { createAuditLog } from '$lib/server/audit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -55,7 +56,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-    create: async ({ request }) => {
+    create: async ({ request, locals }) => {
         const data = await request.formData();
         const jumlah = Number(data.get('jumlah'));
         const harga_modal = Number(data.get('harga_modal'));
@@ -66,11 +67,19 @@ export const actions: Actions = {
             return fail(400, { error: 'All fields are required' });
         }
 
+        const [toko, kategori] = await Promise.all([
+            prisma.toko.findUnique({ where: { id: id_toko } }),
+            prisma.kategori.findUnique({ where: { id: id_kategori } })
+        ]);
+
         const existingStok = await prisma.stok.findFirst({
             where: { id_toko, id_kategori }
         });
 
         if (existingStok) {
+            const oldValue = { jumlah: existingStok.jumlah, harga_modal: existingStok.harga_modal };
+            const newValue = { jumlah: existingStok.jumlah + jumlah, harga_modal };
+
             await prisma.stok.update({
                 where: { id: existingStok.id },
                 data: {
@@ -78,15 +87,52 @@ export const actions: Actions = {
                     harga_modal // Update to latest price
                 }
             });
+
+            // Audit log
+            if (locals.user) {
+                await createAuditLog({
+                    userId: locals.user.id,
+                    userName: locals.user.name,
+                    userRole: locals.user.role,
+                    action: 'INBOUND',
+                    entity: 'STOK',
+                    entityId: existingStok.id.toString(),
+                    tokoId: id_toko,
+                    tokoName: toko?.nama_toko,
+                    kategoriId: id_kategori,
+                    kategoriName: kategori?.nama_kategori,
+                    oldValue,
+                    newValue,
+                    description: `Menambah stok ${kategori?.nama_kategori} sebanyak ${jumlah} pcs di ${toko?.nama_toko}. Stok sebelum: ${oldValue.jumlah}, stok sesudah: ${newValue.jumlah}`
+                });
+            }
         } else {
-            await prisma.stok.create({
+            const newStok = await prisma.stok.create({
                 data: { jumlah, harga_modal, id_toko, id_kategori }
             });
+
+            // Audit log
+            if (locals.user) {
+                await createAuditLog({
+                    userId: locals.user.id,
+                    userName: locals.user.name,
+                    userRole: locals.user.role,
+                    action: 'INBOUND',
+                    entity: 'STOK',
+                    entityId: newStok.id.toString(),
+                    tokoId: id_toko,
+                    tokoName: toko?.nama_toko,
+                    kategoriId: id_kategori,
+                    kategoriName: kategori?.nama_kategori,
+                    newValue: { jumlah, harga_modal },
+                    description: `Membuat stok baru ${kategori?.nama_kategori} sebanyak ${jumlah} pcs di ${toko?.nama_toko}`
+                });
+            }
         }
         
         return { success: true };
     },
-    update: async ({ request }) => {
+    update: async ({ request, locals }) => {
         const data = await request.formData();
         const id = Number(data.get('id'));
         const jumlah = Number(data.get('jumlah'));
@@ -96,10 +142,42 @@ export const actions: Actions = {
             return fail(400, { error: 'ID, Jumlah, and Harga Modal are required' });
         }
 
+        const existingStok = await prisma.stok.findUnique({
+            where: { id },
+            include: { toko: true, kategori: true }
+        });
+
+        if (!existingStok) {
+            return fail(404, { error: 'Stok not found' });
+        }
+
+        const oldValue = { jumlah: existingStok.jumlah, harga_modal: existingStok.harga_modal };
+        const newValue = { jumlah, harga_modal };
+
         await prisma.stok.update({
             where: { id },
             data: { jumlah, harga_modal }
         });
+
+        // Audit log
+        if (locals.user) {
+            await createAuditLog({
+                userId: locals.user.id,
+                userName: locals.user.name,
+                userRole: locals.user.role,
+                action: 'UPDATE_STOK',
+                entity: 'STOK',
+                entityId: id.toString(),
+                tokoId: existingStok.id_toko,
+                tokoName: existingStok.toko.nama_toko,
+                kategoriId: existingStok.id_kategori,
+                kategoriName: existingStok.kategori.nama_kategori,
+                oldValue,
+                newValue,
+                description: `Mengupdate stok ${existingStok.kategori.nama_kategori} di ${existingStok.toko.nama_toko}. Jumlah: ${oldValue.jumlah} → ${newValue.jumlah}, Harga Modal: Rp ${oldValue.harga_modal.toLocaleString()} → Rp ${newValue.harga_modal.toLocaleString()}`
+            });
+        }
+
         return { success: true };
     }
 };

@@ -1,5 +1,6 @@
 import type { PageServerLoad, Actions } from './$types';
 import { prisma } from '$lib/server/prisma';
+import { createAuditLog } from '$lib/server/audit';
 import { fail, redirect } from '@sveltejs/kit';
 
 export const load: PageServerLoad = async () => {
@@ -46,7 +47,7 @@ export const load: PageServerLoad = async () => {
 };
 
 export const actions: Actions = {
-    approve: async ({ request }) => {
+    approve: async ({ request, locals }) => {
         const formData = await request.formData();
         const distribusiId = parseInt(formData.get('distribusiId') as string);
 
@@ -80,6 +81,10 @@ export const actions: Actions = {
                 });
             }
         }
+
+        // Get toko info for audit
+        const tokoAsal = await prisma.toko.findUnique({ where: { id: distribusi.id_toko_asal } });
+        const tokoTujuan = await prisma.toko.findUnique({ where: { id: distribusi.id_toko_tujuan } });
 
         // Process distribution in transaction
         await prisma.$transaction(async (tx) => {
@@ -151,16 +156,35 @@ export const actions: Actions = {
             }
         });
 
+        // Create audit log
+        const itemsSummary = distribusi.items.map(item => `${item.jumlah} unit (ID: ${item.id_kategori})`).join(', ');
+        await createAuditLog({
+            userId: locals.user?.id || '',
+            userName: locals.user?.name || 'Unknown',
+            userRole: locals.user?.role || 'ADMIN',
+            action: 'DISTRIBUSI_APPROVE',
+            entity: 'DISTRIBUSI',
+            entityId: distribusiId.toString(),
+            tokoId: distribusi.id_toko_tujuan,
+            tokoName: tokoTujuan?.nama_toko,
+            oldValue: { status: 'PENDING' },
+            newValue: { status: 'DIKIRIM', items: distribusi.items },
+            description: `Menyetujui distribusi dari ${tokoAsal?.nama_toko} ke ${tokoTujuan?.nama_toko}: ${itemsSummary}`,
+            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+            userAgent: request.headers.get('user-agent') || undefined
+        });
+
         return { success: true };
     },
 
-    reject: async ({ request }) => {
+    reject: async ({ request, locals }) => {
         const formData = await request.formData();
         const distribusiId = parseInt(formData.get('distribusiId') as string);
         const alasan = formData.get('alasan') as string;
 
         const distribusi = await prisma.distribusi.findUnique({
-            where: { id: distribusiId }
+            where: { id: distribusiId },
+            include: { tokoAsal: true, tokoTujuan: true, items: true }
         });
 
         if (!distribusi) {
@@ -178,6 +202,23 @@ export const actions: Actions = {
                 status: 'DITERIMA',
                 keterangan: `DITOLAK: ${alasan || 'Tidak ada alasan'}`
             }
+        });
+
+        // Create audit log
+        await createAuditLog({
+            userId: locals.user?.id || '',
+            userName: locals.user?.name || 'Unknown',
+            userRole: locals.user?.role || 'ADMIN',
+            action: 'DISTRIBUSI_REJECT',
+            entity: 'DISTRIBUSI',
+            entityId: distribusiId.toString(),
+            tokoId: distribusi.id_toko_tujuan,
+            tokoName: distribusi.tokoTujuan?.nama_toko,
+            oldValue: { status: 'PENDING' },
+            newValue: { status: 'DITOLAK', alasan },
+            description: `Menolak distribusi dari ${distribusi.tokoAsal?.nama_toko} ke ${distribusi.tokoTujuan?.nama_toko}. Alasan: ${alasan || 'Tidak ada alasan'}`,
+            ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+            userAgent: request.headers.get('user-agent') || undefined
         });
 
         return { success: true };

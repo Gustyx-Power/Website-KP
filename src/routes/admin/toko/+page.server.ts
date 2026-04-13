@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import { prisma } from '$lib/server/prisma';
+import { createAuditLog } from '$lib/server/audit';
 import type { PageServerLoad, Actions } from './$types';
 
 export const load: PageServerLoad = async () => {
@@ -40,7 +41,7 @@ export const actions: Actions = {
         });
         return { success: true };
     },
-	delete: async ({ request }) => {
+	delete: async ({ request, locals }) => {
 		const data = await request.formData();
 		const id = Number(data.get('id'));
 
@@ -48,11 +49,34 @@ export const actions: Actions = {
 			return fail(400, { error: 'ID is required' });
 		}
 
+		// Get toko info before deletion
+		const toko = await prisma.toko.findUnique({ where: { id } });
+
 		// Soft Delete
 		await prisma.toko.update({
 			where: { id },
 			data: { isActive: false }
 		});
+
+		// Create audit log
+		if (toko) {
+			await createAuditLog({
+				userId: locals.user?.id || '',
+				userName: locals.user?.name || 'Unknown',
+				userRole: locals.user?.role || 'ADMIN',
+				action: 'DELETE_TOKO',
+				entity: 'TOKO',
+				entityId: id.toString(),
+				tokoId: id,
+				tokoName: toko.nama_toko,
+				oldValue: { nama_toko: toko.nama_toko, alamat: toko.alamat, is_pusat: toko.is_pusat, isActive: true },
+				newValue: { isActive: false },
+				description: `Menghapus toko ${toko.nama_toko}${toko.is_pusat ? ' (Gudang Pusat)' : ''}`,
+				ipAddress: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || undefined,
+				userAgent: request.headers.get('user-agent') || undefined
+			});
+		}
+
 		return { success: true };
 	}
 };
