@@ -50,7 +50,7 @@ export const load: PageServerLoad = async () => {
         toko, 
         kategori,
         itemsInboundToday,
-        efficiencyRate: parseFloat(efficiencyRate),
+        efficiencyRate: parseFloat(efficiencyRate.toString()),
         activeWarehouses
     };
 };

@@ -99,6 +99,7 @@
 
 	let selectedLaporan: string | null = null;
 	let showFilterModal = false;
+	let isExporting = false;
 
 	// Filter states
 	let filterPeriode = '7';
@@ -119,14 +120,12 @@
 		selectedLaporan = null;
 	}
 
-	function exportPDF() {
-		alert(`Ekspor PDF untuk ${selectedLaporan} akan segera diimplementasikan`);
-		closeFilterModal();
-	}
-
-	function exportExcel() {
-		alert(`Ekspor Excel untuk ${selectedLaporan} akan segera diimplementasikan`);
-		closeFilterModal();
+	function formatRupiah(amount: number): string {
+		return new Intl.NumberFormat('id-ID', {
+			style: 'currency',
+			currency: 'IDR',
+			minimumFractionDigits: 0
+		}).format(amount);
 	}
 
 	function getFilterLabel(laporanId: string): string {
@@ -145,6 +144,126 @@
 				return f;
 			})
 			.join(', ');
+	}
+
+	async function exportPDF() {
+		if (selectedLaporan !== 'ringkasan') {
+			alert(`Ekspor PDF untuk ${selectedLaporan} akan segera diimplementasikan`);
+			closeFilterModal();
+			return;
+		}
+
+		isExporting = true;
+
+		try {
+			// Fetch data from server using enhance
+			const formData = new FormData();
+			formData.append('periode', filterPeriode);
+			if (filterPeriode === 'custom') {
+				formData.append('customStartDate', customStartDate);
+				formData.append('customEndDate', customEndDate);
+			}
+
+			const response = await fetch('?/getRingkasanData', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+			
+			// Debug log
+			console.log('Raw Response:', result);
+			
+			if (result.type === 'success') {
+				// Import devalue to deserialize SvelteKit's response format
+				const { parse } = await import('devalue');
+				
+				// Parse the serialized data
+				const deserializedData = parse(result.data);
+				console.log('Deserialized data:', deserializedData);
+				
+				// Get the actual report data (first element of array)
+				const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+				
+				console.log('Report data:', reportData);
+				
+				// Check if data is valid
+				if (!reportData || !reportData.data) {
+					throw new Error('Data laporan tidak valid');
+				}
+				
+				const { exportRingkasanPDF } = await import('$lib/exportUtils');
+				await exportRingkasanPDF(reportData, filterPeriode, customStartDate, customEndDate);
+			} else {
+				throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+			}
+		} catch (error) {
+			console.error('Error exporting PDF:', error);
+			alert(`Gagal mengekspor PDF: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+		} finally {
+			isExporting = false;
+			closeFilterModal();
+		}
+	}
+
+	async function exportExcel() {
+		if (selectedLaporan !== 'ringkasan') {
+			alert(`Ekspor Excel untuk ${selectedLaporan} akan segera diimplementasikan`);
+			closeFilterModal();
+			return;
+		}
+
+		isExporting = true;
+
+		try {
+			// Fetch data from server
+			const formData = new FormData();
+			formData.append('periode', filterPeriode);
+			if (filterPeriode === 'custom') {
+				formData.append('customStartDate', customStartDate);
+				formData.append('customEndDate', customEndDate);
+			}
+
+			const response = await fetch('?/getRingkasanData', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+			
+			// Debug log
+			console.log('Raw Response:', result);
+			
+			if (result.type === 'success') {
+				// Import devalue to deserialize SvelteKit's response format
+				const { parse } = await import('devalue');
+				
+				// Parse the serialized data
+				const deserializedData = parse(result.data);
+				console.log('Deserialized data:', deserializedData);
+				
+				// Get the actual report data (first element of array)
+				const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+				
+				console.log('Report data:', reportData);
+				
+				// Check if data is valid
+				if (!reportData || !reportData.data) {
+					throw new Error('Data laporan tidak valid');
+				}
+				
+				const { exportRingkasanExcel } = await import('$lib/exportUtils');
+				await exportRingkasanExcel(reportData);
+			} else {
+				throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+			}
+		} catch (error) {
+			console.error('Error exporting Excel:', error);
+			alert(`Gagal mengekspor Excel: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+		} finally {
+			isExporting = false;
+			closeFilterModal();
+		}
 	}
 </script>
 
@@ -368,8 +487,9 @@
 							class="w-full px-4 py-2.5 bg-[#e4e9ed] text-[#2c3437] rounded-md text-sm border-none focus:ring-2 focus:ring-[#306677]/20 outline-none"
 						>
 							<option value="semua">Semua Toko</option>
-							<option value="toko1">Toko Cabang 1</option>
-							<option value="toko2">Toko Cabang 2</option>
+							{#each data.tokoList as toko}
+								<option value={toko.id}>{toko.nama_toko}</option>
+							{/each}
 						</select>
 					</div>
 				{/if}
@@ -408,31 +528,47 @@
 			<div class="flex flex-col sm:flex-row gap-3">
 				<button
 					on:click={exportPDF}
-					class="flex-1 px-5 py-3 bg-[#306677] text-white rounded-md text-sm font-semibold hover:bg-[#225a6a] transition-colors flex items-center justify-center gap-2"
+					disabled={isExporting}
+					class="flex-1 px-5 py-3 bg-[#306677] text-white rounded-md text-sm font-semibold hover:bg-[#225a6a] transition-colors flex items-center justify-center gap-2 disabled:bg-[#acb3b7] disabled:cursor-not-allowed"
 				>
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
-						/>
-					</svg>
-					Ekspor PDF
+					{#if isExporting}
+						<svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						</svg>
+						Memproses...
+					{:else}
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+							/>
+						</svg>
+						Ekspor PDF
+					{/if}
 				</button>
 				<button
 					on:click={exportExcel}
-					class="flex-1 px-5 py-3 bg-[#3f6754] text-white rounded-md text-sm font-semibold hover:bg-[#2d4a3c] transition-colors flex items-center justify-center gap-2"
+					disabled={isExporting}
+					class="flex-1 px-5 py-3 bg-[#3f6754] text-white rounded-md text-sm font-semibold hover:bg-[#2d4a3c] transition-colors flex items-center justify-center gap-2 disabled:bg-[#acb3b7] disabled:cursor-not-allowed"
 				>
-					<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-						<path
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							stroke-width="2"
-							d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-						/>
-					</svg>
-					Ekspor Excel
+					{#if isExporting}
+						<svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						</svg>
+						Memproses...
+					{:else}
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+							/>
+						</svg>
+						Ekspor Excel
+					{/if}
 				</button>
 			</div>
 		</div>

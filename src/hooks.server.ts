@@ -27,7 +27,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	} else {
 		const { session, user } = await validateSession(sessionId);
 		event.locals.session = session;
-		event.locals.user = user;
+		event.locals.user = user as any; // Type assertion for role compatibility
 	}
 
 	// Set up basic maintenance route check

@@ -47,7 +47,11 @@
 		"@prisma/client": "5",
 		"cors": "^2.8.6",
 		"dotenv": "^17.3.1",
+		"exceljs": "^4.4.0",
 		"express": "^5.2.1",
+		"jspdf": "^4.2.1",
+		"jspdf-autotable": "^5.0.7",
+		"xlsx": "^0.18.5",
 		"zod": "^3.24.1"
 	}
 }
