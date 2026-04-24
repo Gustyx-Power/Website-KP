@@ -21,7 +21,7 @@ export const load: PageServerLoad = async () => {
         prisma.toko.count({ where: { is_pusat: false, isActive: true } }),
         prisma.retur.count({ where: { status: 'PENDING' } }),
         prisma.penjualan.count(),
-        prisma.distribusi.count({ where: { status: 'PENDING' } })
+        prisma.distribusi.count({ where: { status: 'DIKIRIM' } }) // DIKIRIM = sudah disetujui tapi belum dikonfirmasi diterima
     ]);
 
     // 3. Get total balance (total revenue from sales)

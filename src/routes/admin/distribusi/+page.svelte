@@ -162,6 +162,9 @@
 						Item
 					</th>
 					<th class="px-6 py-3 text-left text-xs font-semibold text-[#5f6b6f] uppercase tracking-wider">
+						Keterangan
+					</th>
+					<th class="px-6 py-3 text-left text-xs font-semibold text-[#5f6b6f] uppercase tracking-wider">
 						Total Modal
 					</th>
 					<th class="px-6 py-3 text-left text-xs font-semibold text-[#5f6b6f] uppercase tracking-wider">
@@ -199,6 +202,11 @@
 									{/each}
 								</ul>
 							</details>
+						</td>
+						<td class="px-6 py-4 text-sm text-[#5f6b6f] max-w-xs">
+							<div class="line-clamp-2" title={distribusi.keterangan || '-'}>
+								{distribusi.keterangan || '-'}
+							</div>
 						</td>
 						<td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-[#2c3437]">
 							{formatRupiah(distribusi.totalModal)}
@@ -257,7 +265,7 @@
 					</tr>
 				{:else}
 					<tr>
-						<td colspan="7" class="px-6 py-12 text-center text-[#5f6b6f]">
+						<td colspan="8" class="px-6 py-12 text-center text-[#5f6b6f]">
 							Belum ada permintaan distribusi
 						</td>
 					</tr>
@@ -307,6 +315,10 @@
 								{/each}
 							</ul>
 						</details>
+					</div>
+					<div>
+						<p class="text-xs text-[#5f6b6f] uppercase tracking-wider font-semibold mb-1">Keterangan</p>
+						<p class="text-sm text-[#2c3437]">{distribusi.keterangan || '-'}</p>
 					</div>
 					<div>
 						<p class="text-xs text-[#5f6b6f] uppercase tracking-wider font-semibold mb-1">Total Modal</p>

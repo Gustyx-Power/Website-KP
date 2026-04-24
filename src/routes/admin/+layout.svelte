@@ -1,9 +1,12 @@
 <script lang="ts">
 	import { page } from '$app/stores';
 	import { scale, fade, fly } from 'svelte/transition';
+	import { onMount, onDestroy } from 'svelte';
+	import { invalidate } from '$app/navigation';
 	
 	let isProfileOpen = false;
 	let isMobileMenuOpen = false;
+	let refreshInterval: ReturnType<typeof setInterval>;
 	
 	function toggleProfile() {
 		isProfileOpen = !isProfileOpen;
@@ -20,6 +23,19 @@
 	function closeMobileMenu() {
 		isMobileMenuOpen = false;
 	}
+
+	// Auto-refresh pending counts every 30 seconds
+	onMount(() => {
+		refreshInterval = setInterval(() => {
+			invalidate('app:pending-counts');
+		}, 30000); // 30 seconds
+	});
+
+	onDestroy(() => {
+		if (refreshInterval) {
+			clearInterval(refreshInterval);
+		}
+	});
 </script>
 
 <svelte:window on:click={() => { if(isProfileOpen) isProfileOpen = false; }} />
