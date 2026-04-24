@@ -79,12 +79,12 @@
 
 <!-- Action Buttons -->
 <div class="flex flex-col sm:flex-row gap-3 mb-6 lg:mb-8">
-	<button class="px-4 md:px-5 py-2.5 bg-[#ffffff] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#e4e9ed] transition-all flex items-center justify-center gap-2">
+	<a href="/admin/laporan" class="px-4 md:px-5 py-2.5 bg-[#ffffff] text-[#2c3437] rounded-md text-sm font-semibold hover:bg-[#e4e9ed] transition-all flex items-center justify-center gap-2">
 		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
 		</svg>
 		Ekspor Laporan
-	</button>
+	</a>
 	<a href="/admin/distribusi/buat" class="px-4 md:px-5 py-2.5 bg-gradient-to-r from-[#306677] to-[#225a6a] text-white rounded-md text-sm font-semibold hover:shadow-lg transition-all flex items-center justify-center gap-2">
 		<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 			<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
