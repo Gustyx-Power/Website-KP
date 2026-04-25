@@ -369,5 +369,200 @@ export const actions: Actions = {
                 salesByDay
             }
         };
+    },
+
+    getDistribusiData: async ({ request }) => {
+        const formData = await request.formData();
+        const periode = formData.get('periode') as string;
+        const customStartDate = formData.get('customStartDate') as string;
+        const customEndDate = formData.get('customEndDate') as string;
+        const tokoId = formData.get('tokoId') as string;
+        const status = formData.get('status') as string;
+
+        // Calculate date range
+        let startDate = new Date();
+        let endDate = new Date();
+
+        if (periode === 'custom' && customStartDate && customEndDate) {
+            startDate = new Date(customStartDate);
+            endDate = new Date(customEndDate);
+        } else {
+            const days = parseInt(periode) || 7;
+            startDate.setDate(startDate.getDate() - days);
+        }
+
+        // Build where clause
+        const whereClause: any = {
+            tanggal: { gte: startDate, lte: endDate }
+        };
+
+        if (tokoId && tokoId !== 'semua') {
+            whereClause.id_toko_tujuan = parseInt(tokoId);
+        }
+
+        if (status && status !== 'semua') {
+            whereClause.status = status.toUpperCase();
+        }
+
+        // Get all distributions with details
+        const distribusiList = await prisma.distribusi.findMany({
+            where: whereClause,
+            include: {
+                tokoAsal: true,
+                tokoTujuan: true,
+                createdBy: {
+                    select: { name: true, email: true }
+                },
+                items: {
+                    include: {
+                        kategori: true
+                    }
+                }
+            },
+            orderBy: { tanggal: 'desc' }
+        });
+
+        // Calculate summary
+        const totalDistribusi = distribusiList.length;
+        const totalItemDistribusi = distribusiList.reduce((sum, d) => {
+            return sum + d.items.reduce((itemSum, item) => itemSum + item.jumlah, 0);
+        }, 0);
+
+        // Calculate total nilai modal
+        const totalNilaiModal = await Promise.all(
+            distribusiList.map(async (dist) => {
+                let nilaiDist = 0;
+                for (const item of dist.items) {
+                    // Get harga_modal from Stok table
+                    const stok = await prisma.stok.findFirst({
+                        where: {
+                            id_toko: dist.id_toko_asal,
+                            id_kategori: item.id_kategori
+                        }
+                    });
+                    nilaiDist += (stok?.harga_modal || 0) * item.jumlah;
+                }
+                return nilaiDist;
+            })
+        ).then(values => values.reduce((sum, val) => sum + val, 0));
+
+        // Count by status
+        const statusCount = {
+            pending: distribusiList.filter(d => d.status === 'PENDING').length,
+            dikirim: distribusiList.filter(d => d.status === 'DIKIRIM').length,
+            diterima: distribusiList.filter(d => d.status === 'DITERIMA').length
+        };
+
+        // Get distribution by toko tujuan
+        const distribByToko = await prisma.distribusi.groupBy({
+            by: ['id_toko_tujuan'],
+            where: whereClause,
+            _count: { id: true },
+            orderBy: { _count: { id: 'desc' } }
+        });
+
+        const tokoDetails = await Promise.all(
+            distribByToko.map(async (item) => {
+                const toko = await prisma.toko.findUnique({
+                    where: { id: item.id_toko_tujuan }
+                });
+                
+                // Calculate total items for this toko
+                const distribForToko = distribusiList.filter(d => d.id_toko_tujuan === item.id_toko_tujuan);
+                const totalItems = distribForToko.reduce((sum, d) => {
+                    return sum + d.items.reduce((itemSum, item) => itemSum + item.jumlah, 0);
+                }, 0);
+                
+                return {
+                    toko: toko?.nama_toko || 'Unknown',
+                    jumlahDistribusi: item._count.id,
+                    totalItems
+                };
+            })
+        );
+
+        // Get distribution by kategori
+        const allItems = distribusiList.flatMap(d => d.items);
+        const itemsByKategori = allItems.reduce((acc: any, item) => {
+            const kategoriName = item.kategori.nama_kategori;
+            if (!acc[kategoriName]) {
+                acc[kategoriName] = 0;
+            }
+            acc[kategoriName] += item.jumlah;
+            return acc;
+        }, {});
+
+        const kategoriDetails = Object.entries(itemsByKategori)
+            .map(([kategori, jumlah]) => ({ kategori, jumlah: jumlah as number }))
+            .sort((a, b) => b.jumlah - a.jumlah);
+
+        // Get toko name if filtered
+        let tokoName = 'Semua Toko';
+        if (tokoId && tokoId !== 'semua') {
+            const toko = await prisma.toko.findUnique({
+                where: { id: parseInt(tokoId) }
+            });
+            tokoName = toko?.nama_toko || 'Unknown';
+        }
+
+        // Format distribusi list with calculated nilai modal
+        const distribusiListFormatted = await Promise.all(
+            distribusiList.map(async (dist) => {
+                let nilaiModal = 0;
+                const itemsFormatted = await Promise.all(
+                    dist.items.map(async (item) => {
+                        const stok = await prisma.stok.findFirst({
+                            where: {
+                                id_toko: dist.id_toko_asal,
+                                id_kategori: item.id_kategori
+                            }
+                        });
+                        const hargaModal = stok?.harga_modal || 0;
+                        nilaiModal += hargaModal * item.jumlah;
+                        
+                        return {
+                            kategori: item.kategori.nama_kategori,
+                            jumlah: item.jumlah,
+                            hargaModal
+                        };
+                    })
+                );
+
+                return {
+                    id: dist.id,
+                    tanggal: dist.tanggal.toISOString(),
+                    tokoAsal: dist.tokoAsal.nama_toko,
+                    tokoTujuan: dist.tokoTujuan.nama_toko,
+                    status: dist.status,
+                    items: itemsFormatted,
+                    nilaiModal,
+                    keterangan: dist.keterangan,
+                    createdBy: dist.createdBy.name
+                };
+            })
+        );
+
+        return {
+            success: true,
+            data: {
+                periode: {
+                    start: startDate.toISOString(),
+                    end: endDate.toISOString()
+                },
+                filter: {
+                    toko: tokoName,
+                    status: status === 'semua' ? 'Semua Status' : status.toUpperCase()
+                },
+                ringkasan: {
+                    totalDistribusi,
+                    totalItemDistribusi,
+                    totalNilaiModal,
+                    statusCount
+                },
+                distribusiList: distribusiListFormatted,
+                distribByToko: tokoDetails,
+                distribByKategori: kategoriDetails
+            }
+        };
     }
 };
