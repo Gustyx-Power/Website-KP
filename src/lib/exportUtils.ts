@@ -877,3 +877,507 @@ export async function exportStokPusatExcel(reportData: any) {
         throw error;
     }
 }
+
+export async function exportPenjualanPDF(reportData: any) {
+    try {
+        const { default: jsPDF } = await import('jspdf');
+        const { default: autoTable } = await import('jspdf-autotable');
+
+        const doc = new jsPDF();
+        
+        // Header
+        doc.setFontSize(20);
+        doc.setTextColor(48, 102, 119);
+        doc.text('IMD Clothes', 14, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text('CV. Inti Media Digital', 14, 26);
+        
+        doc.setFontSize(16);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Laporan Penjualan', 14, 40);
+        
+        // Info
+        const startDate = new Date(reportData.data.periode.start);
+        const endDate = new Date(reportData.data.periode.end);
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text(`Periode: ${startDate.toLocaleDateString('id-ID')} - ${endDate.toLocaleDateString('id-ID')}`, 14, 47);
+        doc.text(`Toko: ${reportData.data.filter.toko}`, 14, 52);
+        doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`, 14, 57);
+        
+        let yPos = 65;
+        
+        // Ringkasan
+        doc.setFontSize(12);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Ringkasan Penjualan', 14, yPos);
+        yPos += 8;
+        
+        const ringkasanData = [
+            ['Total Transaksi', `${reportData.data.ringkasan.totalTransaksi} transaksi`],
+            ['Total Qty Terjual', `${reportData.data.ringkasan.totalQtyTerjual.toLocaleString('id-ID')} pcs`],
+            ['Total Pendapatan', formatRupiah(reportData.data.ringkasan.totalPendapatan)]
+        ];
+        
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Metrik', 'Nilai']],
+            body: ringkasanData,
+            theme: 'grid',
+            headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+            styles: { fontSize: 9 }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+        
+        // Penjualan Per Kategori
+        if (reportData.data.salesByCategory.length > 0 && yPos < 240) {
+            doc.setFontSize(12);
+            doc.setTextColor(44, 52, 55);
+            doc.text('Penjualan Per Kategori', 14, yPos);
+            yPos += 8;
+            
+            const categoryData = reportData.data.salesByCategory.map((item: any, i: number) => [
+                i + 1,
+                item.kategori,
+                `${item.qty} pcs`,
+                formatRupiah(item.revenue)
+            ]);
+            
+            autoTable(doc, {
+                startY: yPos,
+                head: [['#', 'Kategori', 'Qty', 'Revenue']],
+                body: categoryData,
+                theme: 'striped',
+                headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+                styles: { fontSize: 9 }
+            });
+            
+            yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+        
+        // Detail Transaksi - tetap di halaman 1 jika masih muat
+        if (reportData.data.penjualanList.length > 0) {
+            // Cek apakah perlu halaman baru
+            if (yPos > 240) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFontSize(12);
+            doc.setTextColor(44, 52, 55);
+            doc.text('Detail Transaksi Penjualan', 14, yPos);
+            yPos += 8;
+            
+            const transactionData = reportData.data.penjualanList.slice(0, 50).map((item: any) => [
+                new Date(item.tanggal).toLocaleDateString('id-ID'),
+                item.kategori,
+                item.toko,
+                `${item.qty} pcs`,
+                formatRupiah(item.total)
+            ]);
+            
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Tanggal', 'Kategori', 'Toko', 'Qty', 'Total']],
+                body: transactionData,
+                theme: 'striped',
+                headStyles: { fillColor: [59, 130, 246], textColor: 255 },
+                styles: { fontSize: 8 },
+                columnStyles: {
+                    0: { cellWidth: 25 },
+                    1: { cellWidth: 40 },
+                    2: { cellWidth: 35 },
+                    3: { cellWidth: 20 },
+                    4: { cellWidth: 30 }
+                }
+            });
+        }
+        
+        // Footer
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(
+                `Halaman ${i} dari ${pageCount}`,
+                doc.internal.pageSize.width / 2,
+                doc.internal.pageSize.height - 10,
+                { align: 'center' }
+            );
+        }
+        
+        doc.save(`Laporan-Penjualan-${new Date().getTime()}.pdf`);
+    } catch (error) {
+        console.error('Error in exportPenjualanPDF:', error);
+        throw error;
+    }
+}
+
+export async function exportPenjualanExcel(reportData: any) {
+    try {
+        const ExcelJS = await import('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'IMD Clothes';
+        workbook.created = new Date();
+        
+        // ===== SHEET 1: RINGKASAN =====
+        const sheet1 = workbook.addWorksheet('Ringkasan', {
+            properties: { tabColor: { argb: 'FF3B82F6' } }
+        });
+        
+        // Title
+        sheet1.mergeCells('A1:B1');
+        const titleCell = sheet1.getCell('A1');
+        titleCell.value = 'LAPORAN PENJUALAN';
+        titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF3B82F6' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        sheet1.mergeCells('A2:B2');
+        const subtitleCell = sheet1.getCell('A2');
+        subtitleCell.value = 'IMD Clothes - CV. Inti Media Digital';
+        subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: 'FF5f6b6f' } };
+        subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Info
+        sheet1.getCell('A4').value = 'Periode';
+        sheet1.getCell('B4').value = `${new Date(reportData.data.periode.start).toLocaleDateString('id-ID')} - ${new Date(reportData.data.periode.end).toLocaleDateString('id-ID')}`;
+        sheet1.getCell('A5').value = 'Toko';
+        sheet1.getCell('B5').value = reportData.data.filter.toko;
+        sheet1.getCell('A6').value = 'Dicetak';
+        sheet1.getCell('B6').value = `${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`;
+        
+        // Ringkasan Section
+        sheet1.mergeCells('A8:B8');
+        const ringkasanTitle = sheet1.getCell('A8');
+        ringkasanTitle.value = 'RINGKASAN PENJUALAN';
+        ringkasanTitle.font = { name: 'Calibri', size: 12, bold: true };
+        ringkasanTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBFDBFE' } };
+        ringkasanTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Table Header
+        sheet1.getCell('A9').value = 'Metrik';
+        sheet1.getCell('B9').value = 'Nilai';
+        ['A9', 'B9'].forEach(cell => {
+            const c = sheet1.getCell(cell);
+            c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+            c.alignment = { horizontal: 'center', vertical: 'middle' };
+            c.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+        
+        // Ringkasan Data
+        const ringkasanData = [
+            ['Total Transaksi', `${reportData.data.ringkasan.totalTransaksi} transaksi`],
+            ['Total Qty Terjual', `${reportData.data.ringkasan.totalQtyTerjual.toLocaleString('id-ID')} pcs`],
+            ['Total Pendapatan', reportData.data.ringkasan.totalPendapatan]
+        ];
+        
+        ringkasanData.forEach((row, idx) => {
+            const rowNum = 10 + idx;
+            sheet1.getCell(`A${rowNum}`).value = row[0];
+            sheet1.getCell(`B${rowNum}`).value = row[1];
+            
+            if (idx === 2) {
+                sheet1.getCell(`B${rowNum}`).numFmt = '"Rp "#,##0';
+            }
+            
+            ['A', 'B'].forEach(col => {
+                const cell = sheet1.getCell(`${col}${rowNum}`);
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                if (idx % 2 === 0) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                }
+            });
+        });
+        
+        // Column widths
+        sheet1.getColumn('A').width = 30;
+        sheet1.getColumn('B').width = 30;
+        
+        // ===== SHEET 2: PENJUALAN PER KATEGORI =====
+        if (reportData.data.salesByCategory.length > 0) {
+            const sheet2 = workbook.addWorksheet('Per Kategori', {
+                properties: { tabColor: { argb: 'FF3B82F6' } }
+            });
+            
+            // Title
+            sheet2.mergeCells('A1:D1');
+            const title2 = sheet2.getCell('A1');
+            title2.value = 'PENJUALAN PER KATEGORI';
+            title2.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF3B82F6' } };
+            title2.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers2 = ['#', 'Kategori', 'Qty Terjual', 'Revenue (Rp)'];
+            headers2.forEach((header, idx) => {
+                const cell = sheet2.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.salesByCategory.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet2.getCell(`A${rowNum}`).value = idx + 1;
+                sheet2.getCell(`B${rowNum}`).value = item.kategori;
+                sheet2.getCell(`C${rowNum}`).value = item.qty;
+                sheet2.getCell(`D${rowNum}`).value = item.revenue;
+                sheet2.getCell(`D${rowNum}`).numFmt = '"Rp "#,##0';
+                
+                ['A', 'B', 'C', 'D'].forEach(col => {
+                    const cell = sheet2.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                    }
+                });
+                
+                sheet2.getCell(`A${rowNum}`).alignment = { horizontal: 'center' };
+                sheet2.getCell(`C${rowNum}`).alignment = { horizontal: 'center' };
+            });
+            
+            // Total Row
+            const totalRow2 = 4 + reportData.data.salesByCategory.length;
+            sheet2.getCell(`A${totalRow2}`).value = 'TOTAL';
+            sheet2.getCell(`B${totalRow2}`).value = '';
+            sheet2.getCell(`C${totalRow2}`).value = reportData.data.salesByCategory.reduce((sum: number, item: any) => sum + item.qty, 0);
+            sheet2.getCell(`D${totalRow2}`).value = reportData.data.salesByCategory.reduce((sum: number, item: any) => sum + item.revenue, 0);
+            sheet2.getCell(`D${totalRow2}`).numFmt = '"Rp "#,##0';
+            
+            ['A', 'B', 'C', 'D'].forEach(col => {
+                const cell = sheet2.getCell(`${col}${totalRow2}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBFDBFE' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet2.getColumn('A').width = 5;
+            sheet2.getColumn('B').width = 35;
+            sheet2.getColumn('C').width = 15;
+            sheet2.getColumn('D').width = 22;
+        }
+        
+        // ===== SHEET 3: PENJUALAN PER TOKO =====
+        if (reportData.data.salesByToko.length > 0) {
+            const sheet3 = workbook.addWorksheet('Per Toko', {
+                properties: { tabColor: { argb: 'FF3B82F6' } }
+            });
+            
+            // Title
+            sheet3.mergeCells('A1:E1');
+            const title3 = sheet3.getCell('A1');
+            title3.value = 'PENJUALAN PER TOKO';
+            title3.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF3B82F6' } };
+            title3.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers3 = ['#', 'Toko', 'Transaksi', 'Qty Terjual', 'Revenue (Rp)'];
+            headers3.forEach((header, idx) => {
+                const cell = sheet3.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.salesByToko.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet3.getCell(`A${rowNum}`).value = idx + 1;
+                sheet3.getCell(`B${rowNum}`).value = item.toko;
+                sheet3.getCell(`C${rowNum}`).value = item.transaksi;
+                sheet3.getCell(`D${rowNum}`).value = item.qty;
+                sheet3.getCell(`E${rowNum}`).value = item.revenue;
+                sheet3.getCell(`E${rowNum}`).numFmt = '"Rp "#,##0';
+                
+                ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                    const cell = sheet3.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                    }
+                });
+                
+                sheet3.getCell(`A${rowNum}`).alignment = { horizontal: 'center' };
+                sheet3.getCell(`C${rowNum}`).alignment = { horizontal: 'center' };
+                sheet3.getCell(`D${rowNum}`).alignment = { horizontal: 'center' };
+            });
+            
+            // Total Row
+            const totalRow3 = 4 + reportData.data.salesByToko.length;
+            sheet3.getCell(`A${totalRow3}`).value = 'TOTAL';
+            sheet3.getCell(`B${totalRow3}`).value = '';
+            sheet3.getCell(`C${totalRow3}`).value = reportData.data.salesByToko.reduce((sum: number, item: any) => sum + item.transaksi, 0);
+            sheet3.getCell(`D${totalRow3}`).value = reportData.data.salesByToko.reduce((sum: number, item: any) => sum + item.qty, 0);
+            sheet3.getCell(`E${totalRow3}`).value = reportData.data.salesByToko.reduce((sum: number, item: any) => sum + item.revenue, 0);
+            sheet3.getCell(`E${totalRow3}`).numFmt = '"Rp "#,##0';
+            
+            ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                const cell = sheet3.getCell(`${col}${totalRow3}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBFDBFE' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet3.getColumn('A').width = 5;
+            sheet3.getColumn('B').width = 30;
+            sheet3.getColumn('C').width = 12;
+            sheet3.getColumn('D').width = 15;
+            sheet3.getColumn('E').width = 22;
+        }
+        
+        // ===== SHEET 4: DETAIL TRANSAKSI =====
+        if (reportData.data.penjualanList.length > 0) {
+            const sheet4 = workbook.addWorksheet('Detail Transaksi', {
+                properties: { tabColor: { argb: 'FF3B82F6' } }
+            });
+            
+            // Title
+            sheet4.mergeCells('A1:G1');
+            const title4 = sheet4.getCell('A1');
+            title4.value = 'DETAIL TRANSAKSI PENJUALAN';
+            title4.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF3B82F6' } };
+            title4.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers4 = ['Tanggal', 'Kategori', 'Toko', 'Qty', 'Harga Jual', 'Total', 'Kasir'];
+            headers4.forEach((header, idx) => {
+                const cell = sheet4.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF3B82F6' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.penjualanList.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet4.getCell(`A${rowNum}`).value = new Date(item.tanggal).toLocaleDateString('id-ID');
+                sheet4.getCell(`B${rowNum}`).value = item.kategori;
+                sheet4.getCell(`C${rowNum}`).value = item.toko;
+                sheet4.getCell(`D${rowNum}`).value = item.qty;
+                sheet4.getCell(`E${rowNum}`).value = item.hargaJual;
+                sheet4.getCell(`E${rowNum}`).numFmt = '"Rp "#,##0';
+                sheet4.getCell(`F${rowNum}`).value = item.total;
+                sheet4.getCell(`F${rowNum}`).numFmt = '"Rp "#,##0';
+                sheet4.getCell(`G${rowNum}`).value = item.kasir;
+                
+                ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach(col => {
+                    const cell = sheet4.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                    }
+                });
+                
+                sheet4.getCell(`D${rowNum}`).alignment = { horizontal: 'center' };
+            });
+            
+            // Total Row
+            const totalRow4 = 4 + reportData.data.penjualanList.length;
+            sheet4.getCell(`A${totalRow4}`).value = 'TOTAL';
+            sheet4.getCell(`B${totalRow4}`).value = '';
+            sheet4.getCell(`C${totalRow4}`).value = '';
+            sheet4.getCell(`D${totalRow4}`).value = reportData.data.penjualanList.reduce((sum: number, item: any) => sum + item.qty, 0);
+            sheet4.getCell(`E${totalRow4}`).value = '';
+            sheet4.getCell(`F${totalRow4}`).value = reportData.data.penjualanList.reduce((sum: number, item: any) => sum + item.total, 0);
+            sheet4.getCell(`F${totalRow4}`).numFmt = '"Rp "#,##0';
+            sheet4.getCell(`G${totalRow4}`).value = '';
+            
+            ['A', 'B', 'C', 'D', 'E', 'F', 'G'].forEach(col => {
+                const cell = sheet4.getCell(`${col}${totalRow4}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBFDBFE' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet4.getColumn('A').width = 15;
+            sheet4.getColumn('B').width = 25;
+            sheet4.getColumn('C').width = 20;
+            sheet4.getColumn('D').width = 10;
+            sheet4.getColumn('E').width = 18;
+            sheet4.getColumn('F').width = 18;
+            sheet4.getColumn('G').width = 20;
+        }
+        
+        // Save Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Laporan-Penjualan-${new Date().getTime()}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error in exportPenjualanExcel:', error);
+        throw error;
+    }
+}

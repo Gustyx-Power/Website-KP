@@ -224,6 +224,49 @@
 			return;
 		}
 
+		// Handle Laporan Penjualan
+		if (selectedLaporan === 'penjualan') {
+			isExporting = true;
+			try {
+				const formData = new FormData();
+				formData.append('periode', filterPeriode);
+				if (filterPeriode === 'custom') {
+					formData.append('customStartDate', customStartDate);
+					formData.append('customEndDate', customEndDate);
+				}
+				formData.append('tokoId', filterToko);
+
+				const response = await fetch('?/getPenjualanData', {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+				
+				if (result.type === 'success') {
+					const { parse } = await import('devalue');
+					const deserializedData = parse(result.data);
+					const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+					
+					if (!reportData || !reportData.data) {
+						throw new Error('Data laporan tidak valid');
+					}
+					
+					const { exportPenjualanPDF } = await import('$lib/exportUtils');
+					await exportPenjualanPDF(reportData);
+				} else {
+					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+				}
+			} catch (error) {
+				console.error('Error exporting PDF:', error);
+				alert(`Gagal mengekspor PDF: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+			} finally {
+				isExporting = false;
+				closeFilterModal();
+			}
+			return;
+		}
+
 		// Other reports
 		alert(`Ekspor PDF untuk ${selectedLaporan} akan segera diimplementasikan`);
 		closeFilterModal();
@@ -294,6 +337,49 @@
 					
 					const { exportStokPusatExcel } = await import('$lib/exportUtils');
 					await exportStokPusatExcel(reportData);
+				} else {
+					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+				}
+			} catch (error) {
+				console.error('Error exporting Excel:', error);
+				alert(`Gagal mengekspor Excel: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+			} finally {
+				isExporting = false;
+				closeFilterModal();
+			}
+			return;
+		}
+
+		// Handle Laporan Penjualan
+		if (selectedLaporan === 'penjualan') {
+			isExporting = true;
+			try {
+				const formData = new FormData();
+				formData.append('periode', filterPeriode);
+				if (filterPeriode === 'custom') {
+					formData.append('customStartDate', customStartDate);
+					formData.append('customEndDate', customEndDate);
+				}
+				formData.append('tokoId', filterToko);
+
+				const response = await fetch('?/getPenjualanData', {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+				
+				if (result.type === 'success') {
+					const { parse } = await import('devalue');
+					const deserializedData = parse(result.data);
+					const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+					
+					if (!reportData || !reportData.data) {
+						throw new Error('Data laporan tidak valid');
+					}
+					
+					const { exportPenjualanExcel } = await import('$lib/exportUtils');
+					await exportPenjualanExcel(reportData);
 				} else {
 					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
 				}

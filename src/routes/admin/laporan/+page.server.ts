@@ -229,5 +229,145 @@ export const actions: Actions = {
                 }))
             }
         };
+    },
+
+    getPenjualanData: async ({ request }) => {
+        const formData = await request.formData();
+        const periode = formData.get('periode') as string;
+        const customStartDate = formData.get('customStartDate') as string;
+        const customEndDate = formData.get('customEndDate') as string;
+        const tokoId = formData.get('tokoId') as string;
+
+        // Calculate date range
+        let startDate = new Date();
+        let endDate = new Date();
+
+        if (periode === 'custom' && customStartDate && customEndDate) {
+            startDate = new Date(customStartDate);
+            endDate = new Date(customEndDate);
+        } else {
+            const days = parseInt(periode) || 7;
+            startDate.setDate(startDate.getDate() - days);
+        }
+
+        // Build where clause
+        const whereClause: any = {
+            tanggal: { gte: startDate, lte: endDate }
+        };
+
+        if (tokoId && tokoId !== 'semua') {
+            whereClause.id_toko = parseInt(tokoId);
+        }
+
+        // Get all sales with details
+        const penjualanList = await prisma.penjualan.findMany({
+            where: whereClause,
+            include: {
+                kategori: true,
+                toko: true,
+                createdBy: {
+                    select: { name: true, email: true }
+                }
+            },
+            orderBy: { tanggal: 'desc' }
+        });
+
+        // Calculate summary
+        const totalTransaksi = penjualanList.length;
+        const totalQtyTerjual = penjualanList.reduce((sum, p) => sum + (p.qty_terjual || 0), 0);
+        const totalPendapatan = penjualanList.reduce((sum, p) => sum + (p.total_uang || 0), 0);
+
+        // Get sales by category
+        const salesByCategory = await prisma.penjualan.groupBy({
+            by: ['id_kategori'],
+            where: whereClause,
+            _sum: { qty_terjual: true, total_uang: true },
+            orderBy: { _sum: { total_uang: 'desc' } }
+        });
+
+        const categoryDetails = await Promise.all(
+            salesByCategory.map(async (item) => {
+                const kategori = await prisma.kategori.findUnique({
+                    where: { id: item.id_kategori }
+                });
+                return {
+                    kategori: kategori?.nama_kategori || 'Unknown',
+                    qty: item._sum.qty_terjual || 0,
+                    revenue: item._sum.total_uang || 0
+                };
+            })
+        );
+
+        // Get sales by toko
+        const salesByToko = await prisma.penjualan.groupBy({
+            by: ['id_toko'],
+            where: whereClause,
+            _sum: { qty_terjual: true, total_uang: true },
+            _count: { id: true },
+            orderBy: { _sum: { total_uang: 'desc' } }
+        });
+
+        const tokoDetails = await Promise.all(
+            salesByToko.map(async (item) => {
+                const toko = await prisma.toko.findUnique({
+                    where: { id: item.id_toko }
+                });
+                return {
+                    toko: toko?.nama_toko || 'Unknown',
+                    transaksi: item._count.id,
+                    qty: item._sum.qty_terjual || 0,
+                    revenue: item._sum.total_uang || 0
+                };
+            })
+        );
+
+        // Get sales by day
+        const salesByDay = await prisma.penjualan.groupBy({
+            by: ['tanggal'],
+            where: whereClause,
+            _sum: { qty_terjual: true, total_uang: true },
+            _count: { id: true },
+            orderBy: { tanggal: 'asc' }
+        });
+
+        // Get toko name if filtered
+        let tokoName = 'Semua Toko';
+        if (tokoId && tokoId !== 'semua') {
+            const toko = await prisma.toko.findUnique({
+                where: { id: parseInt(tokoId) }
+            });
+            tokoName = toko?.nama_toko || 'Unknown';
+        }
+
+        return {
+            success: true,
+            data: {
+                periode: {
+                    start: startDate.toISOString(),
+                    end: endDate.toISOString()
+                },
+                filter: {
+                    toko: tokoName
+                },
+                ringkasan: {
+                    totalTransaksi,
+                    totalQtyTerjual,
+                    totalPendapatan
+                },
+                penjualanList: penjualanList.map(p => ({
+                    id: p.id,
+                    tanggal: p.tanggal.toISOString(),
+                    kategori: p.kategori.nama_kategori,
+                    toko: p.toko.nama_toko,
+                    qty: p.qty_terjual,
+                    hargaJual: p.harga_jual,
+                    total: p.total_uang,
+                    kasir: p.createdBy.name
+                })),
+                salesByCategory: categoryDetails,
+                salesByToko: tokoDetails,
+                salesByDay
+            }
+        };
     }
 };
