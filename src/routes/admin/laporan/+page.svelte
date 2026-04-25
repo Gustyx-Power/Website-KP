@@ -147,123 +147,169 @@
 	}
 
 	async function exportPDF() {
-		if (selectedLaporan !== 'ringkasan') {
-			alert(`Ekspor PDF untuk ${selectedLaporan} akan segera diimplementasikan`);
-			closeFilterModal();
+		// Handle Ringkasan Eksekutif
+		if (selectedLaporan === 'ringkasan') {
+			isExporting = true;
+			try {
+				const formData = new FormData();
+				formData.append('periode', filterPeriode);
+				if (filterPeriode === 'custom') {
+					formData.append('customStartDate', customStartDate);
+					formData.append('customEndDate', customEndDate);
+				}
+
+				const response = await fetch('?/getRingkasanData', {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+				
+				if (result.type === 'success') {
+					const { parse } = await import('devalue');
+					const deserializedData = parse(result.data);
+					const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+					
+					if (!reportData || !reportData.data) {
+						throw new Error('Data laporan tidak valid');
+					}
+					
+					const { exportRingkasanPDF } = await import('$lib/exportUtils');
+					await exportRingkasanPDF(reportData, filterPeriode, customStartDate, customEndDate);
+				} else {
+					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+				}
+			} catch (error) {
+				console.error('Error exporting PDF:', error);
+				alert(`Gagal mengekspor PDF: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+			} finally {
+				isExporting = false;
+				closeFilterModal();
+			}
 			return;
 		}
 
-		isExporting = true;
+		// Handle Stok Gudang Pusat
+		if (selectedLaporan === 'stok-pusat') {
+			isExporting = true;
+			try {
+				const response = await fetch('?/getStokPusatData', {
+					method: 'POST',
+					body: new FormData()
+				});
 
-		try {
-			// Fetch data from server using enhance
-			const formData = new FormData();
-			formData.append('periode', filterPeriode);
-			if (filterPeriode === 'custom') {
-				formData.append('customStartDate', customStartDate);
-				formData.append('customEndDate', customEndDate);
-			}
-
-			const response = await fetch('?/getRingkasanData', {
-				method: 'POST',
-				body: formData
-			});
-
-			const result = await response.json();
-			
-			// Debug log
-			console.log('Raw Response:', result);
-			
-			if (result.type === 'success') {
-				// Import devalue to deserialize SvelteKit's response format
-				const { parse } = await import('devalue');
+				const result = await response.json();
 				
-				// Parse the serialized data
-				const deserializedData = parse(result.data);
-				console.log('Deserialized data:', deserializedData);
-				
-				// Get the actual report data (first element of array)
-				const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
-				
-				console.log('Report data:', reportData);
-				
-				// Check if data is valid
-				if (!reportData || !reportData.data) {
-					throw new Error('Data laporan tidak valid');
+				if (result.type === 'success') {
+					const { parse } = await import('devalue');
+					const deserializedData = parse(result.data);
+					const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+					
+					if (!reportData || !reportData.data) {
+						throw new Error('Data laporan tidak valid');
+					}
+					
+					const { exportStokPusatPDF } = await import('$lib/exportUtils');
+					await exportStokPusatPDF(reportData);
+				} else {
+					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
 				}
-				
-				const { exportRingkasanPDF } = await import('$lib/exportUtils');
-				await exportRingkasanPDF(reportData, filterPeriode, customStartDate, customEndDate);
-			} else {
-				throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+			} catch (error) {
+				console.error('Error exporting PDF:', error);
+				alert(`Gagal mengekspor PDF: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+			} finally {
+				isExporting = false;
+				closeFilterModal();
 			}
-		} catch (error) {
-			console.error('Error exporting PDF:', error);
-			alert(`Gagal mengekspor PDF: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
-		} finally {
-			isExporting = false;
-			closeFilterModal();
+			return;
 		}
+
+		// Other reports
+		alert(`Ekspor PDF untuk ${selectedLaporan} akan segera diimplementasikan`);
+		closeFilterModal();
 	}
 
 	async function exportExcel() {
-		if (selectedLaporan !== 'ringkasan') {
-			alert(`Ekspor Excel untuk ${selectedLaporan} akan segera diimplementasikan`);
-			closeFilterModal();
+		// Handle Ringkasan Eksekutif
+		if (selectedLaporan === 'ringkasan') {
+			isExporting = true;
+			try {
+				const formData = new FormData();
+				formData.append('periode', filterPeriode);
+				if (filterPeriode === 'custom') {
+					formData.append('customStartDate', customStartDate);
+					formData.append('customEndDate', customEndDate);
+				}
+
+				const response = await fetch('?/getRingkasanData', {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+				
+				if (result.type === 'success') {
+					const { parse } = await import('devalue');
+					const deserializedData = parse(result.data);
+					const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+					
+					if (!reportData || !reportData.data) {
+						throw new Error('Data laporan tidak valid');
+					}
+					
+					const { exportRingkasanExcel } = await import('$lib/exportUtils');
+					await exportRingkasanExcel(reportData);
+				} else {
+					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+				}
+			} catch (error) {
+				console.error('Error exporting Excel:', error);
+				alert(`Gagal mengekspor Excel: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+			} finally {
+				isExporting = false;
+				closeFilterModal();
+			}
 			return;
 		}
 
-		isExporting = true;
+		// Handle Stok Gudang Pusat
+		if (selectedLaporan === 'stok-pusat') {
+			isExporting = true;
+			try {
+				const response = await fetch('?/getStokPusatData', {
+					method: 'POST',
+					body: new FormData()
+				});
 
-		try {
-			// Fetch data from server
-			const formData = new FormData();
-			formData.append('periode', filterPeriode);
-			if (filterPeriode === 'custom') {
-				formData.append('customStartDate', customStartDate);
-				formData.append('customEndDate', customEndDate);
-			}
-
-			const response = await fetch('?/getRingkasanData', {
-				method: 'POST',
-				body: formData
-			});
-
-			const result = await response.json();
-			
-			// Debug log
-			console.log('Raw Response:', result);
-			
-			if (result.type === 'success') {
-				// Import devalue to deserialize SvelteKit's response format
-				const { parse } = await import('devalue');
+				const result = await response.json();
 				
-				// Parse the serialized data
-				const deserializedData = parse(result.data);
-				console.log('Deserialized data:', deserializedData);
-				
-				// Get the actual report data (first element of array)
-				const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
-				
-				console.log('Report data:', reportData);
-				
-				// Check if data is valid
-				if (!reportData || !reportData.data) {
-					throw new Error('Data laporan tidak valid');
+				if (result.type === 'success') {
+					const { parse } = await import('devalue');
+					const deserializedData = parse(result.data);
+					const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+					
+					if (!reportData || !reportData.data) {
+						throw new Error('Data laporan tidak valid');
+					}
+					
+					const { exportStokPusatExcel } = await import('$lib/exportUtils');
+					await exportStokPusatExcel(reportData);
+				} else {
+					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
 				}
-				
-				const { exportRingkasanExcel } = await import('$lib/exportUtils');
-				await exportRingkasanExcel(reportData);
-			} else {
-				throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+			} catch (error) {
+				console.error('Error exporting Excel:', error);
+				alert(`Gagal mengekspor Excel: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+			} finally {
+				isExporting = false;
+				closeFilterModal();
 			}
-		} catch (error) {
-			console.error('Error exporting Excel:', error);
-			alert(`Gagal mengekspor Excel: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
-		} finally {
-			isExporting = false;
-			closeFilterModal();
+			return;
 		}
+
+		// Other reports
+		alert(`Ekspor Excel untuk ${selectedLaporan} akan segera diimplementasikan`);
+		closeFilterModal();
 	}
 </script>
 

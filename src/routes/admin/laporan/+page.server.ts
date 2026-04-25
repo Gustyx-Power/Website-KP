@@ -161,5 +161,73 @@ export const actions: Actions = {
                 lowStockItems
             }
         };
+    },
+
+    getStokPusatData: async ({ request }) => {
+        // Get Gudang Pusat
+        const gudangPusat = await prisma.toko.findFirst({
+            where: { is_pusat: true, isActive: true }
+        });
+
+        if (!gudangPusat) {
+            return { success: false, error: 'Gudang pusat tidak ditemukan' };
+        }
+
+        // Get all stock in central warehouse with category details
+        const stokPusat = await prisma.stok.findMany({
+            where: { id_toko: gudangPusat.id },
+            include: { 
+                kategori: true 
+            },
+            orderBy: { jumlah: 'desc' }
+        });
+
+        // Calculate totals with proper null handling
+        const totalUnit = stokPusat.reduce((sum, item) => sum + (item.jumlah || 0), 0);
+        const totalNilaiModal = stokPusat.reduce((sum, item) => {
+            const hargaModal = item.harga_modal || 0; // harga_modal ada di tabel Stok
+            const jumlah = item.jumlah || 0;
+            return sum + (jumlah * hargaModal);
+        }, 0);
+
+        // Get low stock items (< 15 unit)
+        const stokMenipis = stokPusat.filter(item => item.jumlah < 15);
+
+        // Get stock by category summary with null handling
+        const stokPerKategori = stokPusat.map(item => {
+            const hargaModal = item.harga_modal || 0; // harga_modal ada di tabel Stok
+            const jumlah = item.jumlah || 0;
+            const nilaiTotal = jumlah * hargaModal;
+            
+            return {
+                kategori: item.kategori?.nama_kategori || 'Unknown',
+                jumlah: jumlah,
+                hargaModal: hargaModal,
+                nilaiTotal: nilaiTotal,
+                status: jumlah < 5 ? 'Kritis' : jumlah < 15 ? 'Menipis' : 'Aman'
+            };
+        });
+
+        return {
+            success: true,
+            data: {
+                gudangPusat: {
+                    nama: gudangPusat.nama_toko,
+                    alamat: gudangPusat.alamat
+                },
+                ringkasan: {
+                    totalKategori: stokPusat.length,
+                    totalUnit,
+                    totalNilaiModal,
+                    jumlahStokMenipis: stokMenipis.length
+                },
+                stokPerKategori,
+                stokMenipis: stokMenipis.map(item => ({
+                    kategori: item.kategori?.nama_kategori || 'Unknown',
+                    jumlah: item.jumlah || 0,
+                    hargaModal: item.harga_modal || 0 // harga_modal ada di tabel Stok
+                }))
+            }
+        };
     }
 };
