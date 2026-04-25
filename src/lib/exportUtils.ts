@@ -1897,3 +1897,524 @@ export async function exportDistribusiExcel(reportData: any) {
         throw error;
     }
 }
+
+export async function exportReturPDF(reportData: any) {
+    try {
+        const { default: jsPDF } = await import('jspdf');
+        const { default: autoTable } = await import('jspdf-autotable');
+
+        const doc = new jsPDF();
+        
+        // Header
+        doc.setFontSize(20);
+        doc.setTextColor(48, 102, 119);
+        doc.text('IMD Clothes', 14, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text('CV. Inti Media Digital', 14, 26);
+        
+        doc.setFontSize(16);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Laporan Retur', 14, 40);
+        
+        // Info
+        const startDate = new Date(reportData.data.periode.start);
+        const endDate = new Date(reportData.data.periode.end);
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text(`Periode: ${startDate.toLocaleDateString('id-ID')} - ${endDate.toLocaleDateString('id-ID')}`, 14, 47);
+        doc.text(`Toko: ${reportData.data.filter.toko}`, 14, 52);
+        doc.text(`Status: ${reportData.data.filter.status}`, 14, 57);
+        doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`, 14, 62);
+        
+        let yPos = 70;
+        
+        // Ringkasan
+        doc.setFontSize(12);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Ringkasan Retur', 14, yPos);
+        yPos += 8;
+        
+        const ringkasanData = [
+            ['Total Retur', `${reportData.data.ringkasan.totalRetur} retur`],
+            ['Total Qty Diretur', `${reportData.data.ringkasan.totalQtyRetur.toLocaleString('id-ID')} pcs`],
+            ['Total Nilai Retur', formatRupiah(reportData.data.ringkasan.totalNilaiRetur)],
+            ['Status Pending', `${reportData.data.ringkasan.statusCount.pending} retur`],
+            ['Status Disetujui', `${reportData.data.ringkasan.statusCount.disetujui} retur`],
+            ['Status Ditolak', `${reportData.data.ringkasan.statusCount.ditolak} retur`]
+        ];
+        
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Metrik', 'Nilai']],
+            body: ringkasanData,
+            theme: 'grid',
+            headStyles: { fillColor: [220, 38, 38], textColor: 255 },
+            styles: { fontSize: 9 }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+        
+        // Retur Per Kategori
+        if (reportData.data.returByKategori.length > 0 && yPos < 220) {
+            doc.setFontSize(12);
+            doc.setTextColor(44, 52, 55);
+            doc.text('Retur Per Kategori', 14, yPos);
+            yPos += 8;
+            
+            const kategoriData = reportData.data.returByKategori.map((item: any, i: number) => [
+                i + 1,
+                item.kategori,
+                `${item.jumlahRetur} kali`,
+                `${item.totalQty} pcs`
+            ]);
+            
+            autoTable(doc, {
+                startY: yPos,
+                head: [['#', 'Kategori', 'Jumlah Retur', 'Total Qty']],
+                body: kategoriData,
+                theme: 'striped',
+                headStyles: { fillColor: [220, 38, 38], textColor: 255 },
+                styles: { fontSize: 9 }
+            });
+            
+            yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+        
+        // Detail Retur
+        if (reportData.data.returList.length > 0) {
+            if (yPos > 220) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFontSize(12);
+            doc.setTextColor(44, 52, 55);
+            doc.text('Detail Retur', 14, yPos);
+            yPos += 8;
+            
+            const returData = reportData.data.returList.slice(0, 30).map((item: any) => [
+                new Date(item.tanggal).toLocaleDateString('id-ID'),
+                item.kategori,
+                item.toko,
+                `${item.qty} pcs`,
+                item.status,
+                formatRupiah(item.nilaiRetur)
+            ]);
+            
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Tanggal', 'Kategori', 'Toko', 'Qty', 'Status', 'Nilai']],
+                body: returData,
+                theme: 'striped',
+                headStyles: { fillColor: [220, 38, 38], textColor: 255 },
+                styles: { fontSize: 7 },
+                columnStyles: {
+                    0: { cellWidth: 22 },
+                    1: { cellWidth: 35 },
+                    2: { cellWidth: 30 },
+                    3: { cellWidth: 18 },
+                    4: { cellWidth: 22 },
+                    5: { cellWidth: 25 }
+                }
+            });
+        }
+        
+        // Footer
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(
+                `Halaman ${i} dari ${pageCount}`,
+                doc.internal.pageSize.width / 2,
+                doc.internal.pageSize.height - 10,
+                { align: 'center' }
+            );
+        }
+        
+        doc.save(`Laporan-Retur-${new Date().getTime()}.pdf`);
+    } catch (error) {
+        console.error('Error in exportReturPDF:', error);
+        throw error;
+    }
+}
+
+export async function exportReturExcel(reportData: any) {
+    try {
+        const ExcelJS = await import('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'IMD Clothes';
+        workbook.created = new Date();
+        
+        // ===== SHEET 1: RINGKASAN =====
+        const sheet1 = workbook.addWorksheet('Ringkasan', {
+            properties: { tabColor: { argb: 'FFDC2626' } }
+        });
+        
+        // Title
+        sheet1.mergeCells('A1:B1');
+        const titleCell = sheet1.getCell('A1');
+        titleCell.value = 'LAPORAN RETUR';
+        titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFDC2626' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        sheet1.mergeCells('A2:B2');
+        const subtitleCell = sheet1.getCell('A2');
+        subtitleCell.value = 'IMD Clothes - CV. Inti Media Digital';
+        subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: 'FF5f6b6f' } };
+        subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Info
+        sheet1.getCell('A4').value = 'Periode';
+        sheet1.getCell('B4').value = `${new Date(reportData.data.periode.start).toLocaleDateString('id-ID')} - ${new Date(reportData.data.periode.end).toLocaleDateString('id-ID')}`;
+        sheet1.getCell('A5').value = 'Toko';
+        sheet1.getCell('B5').value = reportData.data.filter.toko;
+        sheet1.getCell('A6').value = 'Status';
+        sheet1.getCell('B6').value = reportData.data.filter.status;
+        sheet1.getCell('A7').value = 'Dicetak';
+        sheet1.getCell('B7').value = `${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`;
+        
+        // Ringkasan Section
+        sheet1.mergeCells('A9:B9');
+        const ringkasanTitle = sheet1.getCell('A9');
+        ringkasanTitle.value = 'RINGKASAN RETUR';
+        ringkasanTitle.font = { name: 'Calibri', size: 12, bold: true };
+        ringkasanTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECACA' } };
+        ringkasanTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Table Header
+        sheet1.getCell('A10').value = 'Metrik';
+        sheet1.getCell('B10').value = 'Nilai';
+        ['A10', 'B10'].forEach(cell => {
+            const c = sheet1.getCell(cell);
+            c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+            c.alignment = { horizontal: 'center', vertical: 'middle' };
+            c.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+        
+        // Ringkasan Data
+        const ringkasanData = [
+            ['Total Retur', `${reportData.data.ringkasan.totalRetur} retur`],
+            ['Total Qty Diretur', `${reportData.data.ringkasan.totalQtyRetur.toLocaleString('id-ID')} pcs`],
+            ['Total Nilai Retur', reportData.data.ringkasan.totalNilaiRetur],
+            ['Status Pending', `${reportData.data.ringkasan.statusCount.pending} retur`],
+            ['Status Disetujui', `${reportData.data.ringkasan.statusCount.disetujui} retur`],
+            ['Status Ditolak', `${reportData.data.ringkasan.statusCount.ditolak} retur`]
+        ];
+        
+        ringkasanData.forEach((row, idx) => {
+            const rowNum = 11 + idx;
+            sheet1.getCell(`A${rowNum}`).value = row[0];
+            sheet1.getCell(`B${rowNum}`).value = row[1];
+            
+            if (idx === 2) {
+                sheet1.getCell(`B${rowNum}`).numFmt = '"Rp "#,##0';
+            }
+            
+            ['A', 'B'].forEach(col => {
+                const cell = sheet1.getCell(`${col}${rowNum}`);
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                if (idx % 2 === 0) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                }
+            });
+        });
+        
+        // Column widths
+        sheet1.getColumn('A').width = 35;
+        sheet1.getColumn('B').width = 30;
+        
+        // ===== SHEET 2: RETUR PER KATEGORI =====
+        if (reportData.data.returByKategori.length > 0) {
+            const sheet2 = workbook.addWorksheet('Per Kategori', {
+                properties: { tabColor: { argb: 'FFDC2626' } }
+            });
+            
+            // Title
+            sheet2.mergeCells('A1:D1');
+            const title2 = sheet2.getCell('A1');
+            title2.value = 'RETUR PER KATEGORI';
+            title2.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFDC2626' } };
+            title2.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers2 = ['#', 'Kategori', 'Jumlah Retur', 'Total Qty'];
+            headers2.forEach((header, idx) => {
+                const cell = sheet2.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.returByKategori.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet2.getCell(`A${rowNum}`).value = idx + 1;
+                sheet2.getCell(`B${rowNum}`).value = item.kategori;
+                sheet2.getCell(`C${rowNum}`).value = item.jumlahRetur;
+                sheet2.getCell(`D${rowNum}`).value = item.totalQty;
+                
+                ['A', 'B', 'C', 'D'].forEach(col => {
+                    const cell = sheet2.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfef2f2' } };
+                    }
+                });
+                
+                sheet2.getCell(`A${rowNum}`).alignment = { horizontal: 'center' };
+                sheet2.getCell(`C${rowNum}`).alignment = { horizontal: 'center' };
+                sheet2.getCell(`D${rowNum}`).alignment = { horizontal: 'center' };
+            });
+            
+            // Total Row
+            const totalRow2 = 4 + reportData.data.returByKategori.length;
+            sheet2.getCell(`A${totalRow2}`).value = 'TOTAL';
+            sheet2.getCell(`B${totalRow2}`).value = '';
+            sheet2.getCell(`C${totalRow2}`).value = reportData.data.returByKategori.reduce((sum: number, item: any) => sum + item.jumlahRetur, 0);
+            sheet2.getCell(`D${totalRow2}`).value = reportData.data.returByKategori.reduce((sum: number, item: any) => sum + item.totalQty, 0);
+            
+            ['A', 'B', 'C', 'D'].forEach(col => {
+                const cell = sheet2.getCell(`${col}${totalRow2}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECACA' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet2.getColumn('A').width = 5;
+            sheet2.getColumn('B').width = 35;
+            sheet2.getColumn('C').width = 18;
+            sheet2.getColumn('D').width = 15;
+        }
+        
+        // ===== SHEET 3: RETUR PER TOKO =====
+        if (reportData.data.returByToko.length > 0) {
+            const sheet3 = workbook.addWorksheet('Per Toko', {
+                properties: { tabColor: { argb: 'FFDC2626' } }
+            });
+            
+            // Title
+            sheet3.mergeCells('A1:D1');
+            const title3 = sheet3.getCell('A1');
+            title3.value = 'RETUR PER TOKO';
+            title3.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFDC2626' } };
+            title3.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers3 = ['#', 'Toko', 'Jumlah Retur', 'Total Qty'];
+            headers3.forEach((header, idx) => {
+                const cell = sheet3.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.returByToko.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet3.getCell(`A${rowNum}`).value = idx + 1;
+                sheet3.getCell(`B${rowNum}`).value = item.toko;
+                sheet3.getCell(`C${rowNum}`).value = item.jumlahRetur;
+                sheet3.getCell(`D${rowNum}`).value = item.totalQty;
+                
+                ['A', 'B', 'C', 'D'].forEach(col => {
+                    const cell = sheet3.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfef2f2' } };
+                    }
+                });
+                
+                sheet3.getCell(`A${rowNum}`).alignment = { horizontal: 'center' };
+                sheet3.getCell(`C${rowNum}`).alignment = { horizontal: 'center' };
+                sheet3.getCell(`D${rowNum}`).alignment = { horizontal: 'center' };
+            });
+            
+            // Total Row
+            const totalRow3 = 4 + reportData.data.returByToko.length;
+            sheet3.getCell(`A${totalRow3}`).value = 'TOTAL';
+            sheet3.getCell(`B${totalRow3}`).value = '';
+            sheet3.getCell(`C${totalRow3}`).value = reportData.data.returByToko.reduce((sum: number, item: any) => sum + item.jumlahRetur, 0);
+            sheet3.getCell(`D${totalRow3}`).value = reportData.data.returByToko.reduce((sum: number, item: any) => sum + item.totalQty, 0);
+            
+            ['A', 'B', 'C', 'D'].forEach(col => {
+                const cell = sheet3.getCell(`${col}${totalRow3}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECACA' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet3.getColumn('A').width = 5;
+            sheet3.getColumn('B').width = 30;
+            sheet3.getColumn('C').width = 18;
+            sheet3.getColumn('D').width = 15;
+        }
+        
+        // ===== SHEET 4: DETAIL RETUR =====
+        if (reportData.data.returList.length > 0) {
+            const sheet4 = workbook.addWorksheet('Detail Retur', {
+                properties: { tabColor: { argb: 'FFDC2626' } }
+            });
+            
+            // Title
+            sheet4.mergeCells('A1:H1');
+            const title4 = sheet4.getCell('A1');
+            title4.value = 'DETAIL RETUR';
+            title4.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFDC2626' } };
+            title4.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers4 = ['Tanggal', 'Kategori', 'Toko', 'Qty', 'Nilai Retur', 'Status', 'Keterangan', 'Dibuat Oleh'];
+            headers4.forEach((header, idx) => {
+                const cell = sheet4.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.returList.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet4.getCell(`A${rowNum}`).value = new Date(item.tanggal).toLocaleDateString('id-ID');
+                sheet4.getCell(`B${rowNum}`).value = item.kategori;
+                sheet4.getCell(`C${rowNum}`).value = item.toko;
+                sheet4.getCell(`D${rowNum}`).value = item.qty;
+                sheet4.getCell(`E${rowNum}`).value = item.nilaiRetur;
+                sheet4.getCell(`E${rowNum}`).numFmt = '"Rp "#,##0';
+                sheet4.getCell(`F${rowNum}`).value = item.status;
+                sheet4.getCell(`G${rowNum}`).value = item.keterangan || '-';
+                sheet4.getCell(`H${rowNum}`).value = item.createdBy;
+                
+                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(col => {
+                    const cell = sheet4.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfef2f2' } };
+                    }
+                });
+                
+                sheet4.getCell(`D${rowNum}`).alignment = { horizontal: 'center' };
+                sheet4.getCell(`F${rowNum}`).alignment = { horizontal: 'center' };
+                
+                // Color status
+                const statusCell = sheet4.getCell(`F${rowNum}`);
+                if (item.status === 'PENDING') {
+                    statusCell.font = { bold: true, color: { argb: 'FFF59E0B' } };
+                } else if (item.status === 'DISETUJUI') {
+                    statusCell.font = { bold: true, color: { argb: 'FF10B981' } };
+                } else if (item.status === 'DITOLAK') {
+                    statusCell.font = { bold: true, color: { argb: 'FFDC2626' } };
+                }
+            });
+            
+            // Total Row
+            const totalRow4 = 4 + reportData.data.returList.length;
+            sheet4.getCell(`A${totalRow4}`).value = 'TOTAL';
+            sheet4.getCell(`B${totalRow4}`).value = '';
+            sheet4.getCell(`C${totalRow4}`).value = '';
+            sheet4.getCell(`D${totalRow4}`).value = reportData.data.returList.reduce((sum: number, item: any) => sum + item.qty, 0);
+            sheet4.getCell(`E${totalRow4}`).value = reportData.data.returList.reduce((sum: number, item: any) => sum + item.nilaiRetur, 0);
+            sheet4.getCell(`E${totalRow4}`).numFmt = '"Rp "#,##0';
+            sheet4.getCell(`F${totalRow4}`).value = '';
+            sheet4.getCell(`G${totalRow4}`).value = '';
+            sheet4.getCell(`H${totalRow4}`).value = '';
+            
+            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].forEach(col => {
+                const cell = sheet4.getCell(`${col}${totalRow4}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECACA' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet4.getColumn('A').width = 15;
+            sheet4.getColumn('B').width = 25;
+            sheet4.getColumn('C').width = 20;
+            sheet4.getColumn('D').width = 10;
+            sheet4.getColumn('E').width = 18;
+            sheet4.getColumn('F').width = 12;
+            sheet4.getColumn('G').width = 30;
+            sheet4.getColumn('H').width = 20;
+        }
+        
+        // Save Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Laporan-Retur-${new Date().getTime()}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error in exportReturExcel:', error);
+        throw error;
+    }
+}

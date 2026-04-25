@@ -564,5 +564,179 @@ export const actions: Actions = {
                 distribByKategori: kategoriDetails
             }
         };
+    },
+
+    getReturData: async ({ request }) => {
+        const formData = await request.formData();
+        const periode = formData.get('periode') as string;
+        const customStartDate = formData.get('customStartDate') as string;
+        const customEndDate = formData.get('customEndDate') as string;
+        const tokoId = formData.get('tokoId') as string;
+        const status = formData.get('status') as string;
+
+        // Calculate date range
+        let startDate = new Date();
+        let endDate = new Date();
+
+        if (periode === 'custom' && customStartDate && customEndDate) {
+            startDate = new Date(customStartDate);
+            endDate = new Date(customEndDate);
+        } else {
+            const days = parseInt(periode) || 7;
+            startDate.setDate(startDate.getDate() - days);
+        }
+
+        // Build where clause
+        const whereClause: any = {
+            tanggal: { gte: startDate, lte: endDate }
+        };
+
+        if (tokoId && tokoId !== 'semua') {
+            whereClause.id_toko = parseInt(tokoId);
+        }
+
+        if (status && status !== 'semua') {
+            whereClause.status = status.toUpperCase();
+        }
+
+        // Get all returns with details
+        const returList = await prisma.retur.findMany({
+            where: whereClause,
+            include: {
+                kategori: true,
+                toko: true,
+                createdBy: {
+                    select: { name: true, email: true }
+                }
+            },
+            orderBy: { tanggal: 'desc' }
+        });
+
+        // Calculate summary
+        const totalRetur = returList.length;
+        const totalQtyRetur = returList.reduce((sum, r) => sum + (r.qty_retur || 0), 0);
+
+        // Calculate total nilai (estimated based on harga_modal)
+        const totalNilaiRetur = await Promise.all(
+            returList.map(async (retur) => {
+                const stok = await prisma.stok.findFirst({
+                    where: {
+                        id_toko: retur.id_toko,
+                        id_kategori: retur.id_kategori
+                    }
+                });
+                return (stok?.harga_modal || 0) * retur.qty_retur;
+            })
+        ).then(values => values.reduce((sum, val) => sum + val, 0));
+
+        // Count by status
+        const statusCount = {
+            pending: returList.filter(r => r.status === 'PENDING').length,
+            disetujui: returList.filter(r => r.status === 'DISETUJUI').length,
+            ditolak: returList.filter(r => r.status === 'DITOLAK').length
+        };
+
+        // Get retur by toko
+        const returByToko = await prisma.retur.groupBy({
+            by: ['id_toko'],
+            where: whereClause,
+            _sum: { qty_retur: true },
+            _count: { id: true },
+            orderBy: { _sum: { qty_retur: 'desc' } }
+        });
+
+        const tokoDetails = await Promise.all(
+            returByToko.map(async (item) => {
+                const toko = await prisma.toko.findUnique({
+                    where: { id: item.id_toko }
+                });
+                return {
+                    toko: toko?.nama_toko || 'Unknown',
+                    jumlahRetur: item._count.id,
+                    totalQty: item._sum.qty_retur || 0
+                };
+            })
+        );
+
+        // Get retur by kategori
+        const returByKategori = await prisma.retur.groupBy({
+            by: ['id_kategori'],
+            where: whereClause,
+            _sum: { qty_retur: true },
+            _count: { id: true },
+            orderBy: { _sum: { qty_retur: 'desc' } }
+        });
+
+        const kategoriDetails = await Promise.all(
+            returByKategori.map(async (item) => {
+                const kategori = await prisma.kategori.findUnique({
+                    where: { id: item.id_kategori }
+                });
+                return {
+                    kategori: kategori?.nama_kategori || 'Unknown',
+                    jumlahRetur: item._count.id,
+                    totalQty: item._sum.qty_retur || 0
+                };
+            })
+        );
+
+        // Get toko name if filtered
+        let tokoName = 'Semua Toko';
+        if (tokoId && tokoId !== 'semua') {
+            const toko = await prisma.toko.findUnique({
+                where: { id: parseInt(tokoId) }
+            });
+            tokoName = toko?.nama_toko || 'Unknown';
+        }
+
+        // Format retur list with calculated nilai
+        const returListFormatted = await Promise.all(
+            returList.map(async (retur) => {
+                const stok = await prisma.stok.findFirst({
+                    where: {
+                        id_toko: retur.id_toko,
+                        id_kategori: retur.id_kategori
+                    }
+                });
+                const hargaModal = stok?.harga_modal || 0;
+                const nilaiRetur = hargaModal * retur.qty_retur;
+
+                return {
+                    id: retur.id,
+                    tanggal: retur.tanggal.toISOString(),
+                    kategori: retur.kategori.nama_kategori,
+                    toko: retur.toko.nama_toko,
+                    qty: retur.qty_retur,
+                    hargaModal,
+                    nilaiRetur,
+                    status: retur.status,
+                    keterangan: retur.keterangan,
+                    createdBy: retur.createdBy.name
+                };
+            })
+        );
+
+        return {
+            success: true,
+            data: {
+                periode: {
+                    start: startDate.toISOString(),
+                    end: endDate.toISOString()
+                },
+                filter: {
+                    toko: tokoName,
+                    status: status === 'semua' ? 'Semua Status' : status.toUpperCase()
+                },
+                ringkasan: {
+                    totalRetur,
+                    totalQtyRetur,
+                    totalNilaiRetur,
+                    statusCount
+                },
+                returList: returListFormatted,
+                returByToko: tokoDetails,
+                returByKategori: kategoriDetails
+            }
+        };
     }
 };
