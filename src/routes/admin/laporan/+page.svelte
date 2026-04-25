@@ -393,6 +393,45 @@
 			return;
 		}
 
+		// Handle Laporan Pegawai
+		if (selectedLaporan === 'pegawai') {
+			isExporting = true;
+			try {
+				const formData = new FormData();
+				formData.append('role', filterRole);
+				formData.append('statusFilter', filterStatusPegawai);
+
+				const response = await fetch('?/getPegawaiData', {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+				
+				if (result.type === 'success') {
+					const { parse } = await import('devalue');
+					const deserializedData = parse(result.data);
+					const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+					
+					if (!reportData || !reportData.data) {
+						throw new Error('Data laporan tidak valid');
+					}
+					
+					const { exportPegawaiPDF } = await import('$lib/exportUtils');
+					await exportPegawaiPDF(reportData);
+				} else {
+					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+				}
+			} catch (error) {
+				console.error('Error exporting PDF:', error);
+				alert(`Gagal mengekspor PDF: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+			} finally {
+				isExporting = false;
+				closeFilterModal();
+			}
+			return;
+		}
+
 		// Other reports
 		alert(`Ekspor PDF untuk ${selectedLaporan} akan segera diimplementasikan`);
 		closeFilterModal();
@@ -632,6 +671,45 @@
 					
 					const { exportStokTokoExcel } = await import('$lib/exportUtils');
 					await exportStokTokoExcel(reportData);
+				} else {
+					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+				}
+			} catch (error) {
+				console.error('Error exporting Excel:', error);
+				alert(`Gagal mengekspor Excel: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+			} finally {
+				isExporting = false;
+				closeFilterModal();
+			}
+			return;
+		}
+
+		// Handle Laporan Pegawai
+		if (selectedLaporan === 'pegawai') {
+			isExporting = true;
+			try {
+				const formData = new FormData();
+				formData.append('role', filterRole);
+				formData.append('statusFilter', filterStatusPegawai);
+
+				const response = await fetch('?/getPegawaiData', {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+				
+				if (result.type === 'success') {
+					const { parse } = await import('devalue');
+					const deserializedData = parse(result.data);
+					const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+					
+					if (!reportData || !reportData.data) {
+						throw new Error('Data laporan tidak valid');
+					}
+					
+					const { exportPegawaiExcel } = await import('$lib/exportUtils');
+					await exportPegawaiExcel(reportData);
 				} else {
 					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
 				}

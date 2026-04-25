@@ -849,5 +849,120 @@ export const actions: Actions = {
                 }))
             }
         };
+    },
+
+    getPegawaiData: async ({ request }) => {
+        const formData = await request.formData();
+        const role = formData.get('role') as string;
+        const statusFilter = formData.get('statusFilter') as string;
+
+        // Build where clause
+        const whereClause: any = {};
+
+        if (role && role !== 'semua') {
+            whereClause.role = role.toUpperCase();
+        }
+
+        if (statusFilter && statusFilter !== 'semua') {
+            whereClause.isActive = statusFilter === 'aktif';
+        }
+
+        // Get all users with toko details
+        const userList = await prisma.user.findMany({
+            where: whereClause,
+            include: {
+                toko: true
+            },
+            orderBy: [
+                { role: 'asc' },
+                { name: 'asc' }
+            ]
+        });
+
+        // Calculate summary
+        const totalPegawai = userList.length;
+        const pegawaiAktif = userList.filter(u => u.isActive).length;
+        const pegawaiNonAktif = userList.filter(u => !u.isActive).length;
+
+        // Count by role
+        const roleCount = {
+            owner: userList.filter(u => u.role === 'OWNER').length,
+            admin: userList.filter(u => u.role === 'ADMIN').length,
+            kasir: userList.filter(u => u.role === 'KASIR').length
+        };
+
+        // Group by toko
+        const pegawaiByToko: any = {};
+        userList.forEach(user => {
+            const tokoName = user.toko?.nama_toko || 'Tidak Ada Toko';
+            if (!pegawaiByToko[tokoName]) {
+                pegawaiByToko[tokoName] = {
+                    toko: tokoName,
+                    jumlahPegawai: 0,
+                    aktif: 0,
+                    nonAktif: 0
+                };
+            }
+            pegawaiByToko[tokoName].jumlahPegawai += 1;
+            if (user.isActive) {
+                pegawaiByToko[tokoName].aktif += 1;
+            } else {
+                pegawaiByToko[tokoName].nonAktif += 1;
+            }
+        });
+
+        const tokoSummary = Object.values(pegawaiByToko);
+
+        // Group by role
+        const pegawaiByRole = [
+            {
+                role: 'Owner',
+                jumlah: roleCount.owner,
+                aktif: userList.filter(u => u.role === 'OWNER' && u.isActive).length,
+                nonAktif: userList.filter(u => u.role === 'OWNER' && !u.isActive).length
+            },
+            {
+                role: 'Admin',
+                jumlah: roleCount.admin,
+                aktif: userList.filter(u => u.role === 'ADMIN' && u.isActive).length,
+                nonAktif: userList.filter(u => u.role === 'ADMIN' && !u.isActive).length
+            },
+            {
+                role: 'Kasir',
+                jumlah: roleCount.kasir,
+                aktif: userList.filter(u => u.role === 'KASIR' && u.isActive).length,
+                nonAktif: userList.filter(u => u.role === 'KASIR' && !u.isActive).length
+            }
+        ];
+
+        // Format user list
+        const pegawaiList = userList.map(user => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            toko: user.toko?.nama_toko || '-',
+            isActive: user.isActive,
+            createdAt: user.createdAt.toISOString()
+        }));
+
+        return {
+            success: true,
+            data: {
+                filter: {
+                    role: role === 'semua' ? 'Semua Role' : role.toUpperCase(),
+                    status: statusFilter === 'semua' ? 'Semua Status' : statusFilter === 'aktif' ? 'Aktif' : 'Non-Aktif'
+                },
+                ringkasan: {
+                    totalPegawai,
+                    pegawaiAktif,
+                    pegawaiNonAktif,
+                    roleCount
+                },
+                pegawaiList,
+                pegawaiByToko: tokoSummary,
+                pegawaiByRole
+            }
+        };
     }
 };

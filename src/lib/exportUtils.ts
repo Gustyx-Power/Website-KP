@@ -2953,3 +2953,493 @@ export async function exportStokTokoExcel(reportData: any) {
         throw error;
     }
 }
+
+export async function exportPegawaiPDF(reportData: any) {
+    try {
+        const { default: jsPDF } = await import('jspdf');
+        const { default: autoTable } = await import('jspdf-autotable');
+
+        const doc = new jsPDF();
+        
+        // Header
+        doc.setFontSize(20);
+        doc.setTextColor(48, 102, 119);
+        doc.text('IMD Clothes', 14, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text('CV. Inti Media Digital', 14, 26);
+        
+        doc.setFontSize(16);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Laporan Pegawai', 14, 40);
+        
+        // Info
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text(`Role: ${reportData.data.filter.role}`, 14, 47);
+        doc.text(`Status: ${reportData.data.filter.status}`, 14, 52);
+        doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`, 14, 57);
+        
+        let yPos = 65;
+        
+        // Ringkasan
+        doc.setFontSize(12);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Ringkasan Pegawai', 14, yPos);
+        yPos += 8;
+        
+        const ringkasanData = [
+            ['Total Pegawai', `${reportData.data.ringkasan.totalPegawai} orang`],
+            ['Pegawai Aktif', `${reportData.data.ringkasan.pegawaiAktif} orang`],
+            ['Pegawai Non-Aktif', `${reportData.data.ringkasan.pegawaiNonAktif} orang`],
+            ['Owner', `${reportData.data.ringkasan.roleCount.owner} orang`],
+            ['Admin', `${reportData.data.ringkasan.roleCount.admin} orang`],
+            ['Kasir', `${reportData.data.ringkasan.roleCount.kasir} orang`]
+        ];
+        
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Metrik', 'Nilai']],
+            body: ringkasanData,
+            theme: 'grid',
+            headStyles: { fillColor: [99, 102, 241], textColor: 255 },
+            styles: { fontSize: 9 }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+        
+        // Pegawai Per Role
+        if (reportData.data.pegawaiByRole.length > 0 && yPos < 220) {
+            doc.setFontSize(12);
+            doc.setTextColor(44, 52, 55);
+            doc.text('Pegawai Per Role', 14, yPos);
+            yPos += 8;
+            
+            const roleData = reportData.data.pegawaiByRole.map((item: any) => [
+                item.role,
+                `${item.jumlah} orang`,
+                `${item.aktif} aktif`,
+                `${item.nonAktif} non-aktif`
+            ]);
+            
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Role', 'Total', 'Aktif', 'Non-Aktif']],
+                body: roleData,
+                theme: 'striped',
+                headStyles: { fillColor: [99, 102, 241], textColor: 255 },
+                styles: { fontSize: 9 }
+            });
+            
+            yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+        
+        // Detail Pegawai
+        if (reportData.data.pegawaiList.length > 0) {
+            if (yPos > 220) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFontSize(12);
+            doc.setTextColor(44, 52, 55);
+            doc.text('Detail Pegawai', 14, yPos);
+            yPos += 8;
+            
+            const pegawaiData = reportData.data.pegawaiList.map((item: any) => [
+                item.name,
+                item.email,
+                item.role,
+                item.toko,
+                item.isActive ? 'Aktif' : 'Non-Aktif'
+            ]);
+            
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Nama', 'Email', 'Role', 'Toko', 'Status']],
+                body: pegawaiData,
+                theme: 'striped',
+                headStyles: { fillColor: [99, 102, 241], textColor: 255 },
+                styles: { fontSize: 8 },
+                columnStyles: {
+                    0: { cellWidth: 35 },
+                    1: { cellWidth: 45 },
+                    2: { cellWidth: 25 },
+                    3: { cellWidth: 35 },
+                    4: { cellWidth: 25 }
+                },
+                didParseCell: function(data: any) {
+                    if (data.section === 'body' && data.column.index === 4) {
+                        const status = data.cell.raw;
+                        if (status === 'Aktif') {
+                            data.cell.styles.textColor = [16, 185, 129];
+                            data.cell.styles.fontStyle = 'bold';
+                        } else {
+                            data.cell.styles.textColor = [156, 163, 175];
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Footer
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(
+                `Halaman ${i} dari ${pageCount}`,
+                doc.internal.pageSize.width / 2,
+                doc.internal.pageSize.height - 10,
+                { align: 'center' }
+            );
+        }
+        
+        doc.save(`Laporan-Pegawai-${new Date().getTime()}.pdf`);
+    } catch (error) {
+        console.error('Error in exportPegawaiPDF:', error);
+        throw error;
+    }
+}
+
+export async function exportPegawaiExcel(reportData: any) {
+    try {
+        const ExcelJS = await import('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'IMD Clothes';
+        workbook.created = new Date();
+        
+        // ===== SHEET 1: RINGKASAN =====
+        const sheet1 = workbook.addWorksheet('Ringkasan', {
+            properties: { tabColor: { argb: 'FF6366F1' } }
+        });
+        
+        // Title
+        sheet1.mergeCells('A1:B1');
+        const titleCell = sheet1.getCell('A1');
+        titleCell.value = 'LAPORAN PEGAWAI';
+        titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF6366F1' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        sheet1.mergeCells('A2:B2');
+        const subtitleCell = sheet1.getCell('A2');
+        subtitleCell.value = 'IMD Clothes - CV. Inti Media Digital';
+        subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: 'FF5f6b6f' } };
+        subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Info
+        sheet1.getCell('A4').value = 'Role';
+        sheet1.getCell('B4').value = reportData.data.filter.role;
+        sheet1.getCell('A5').value = 'Status';
+        sheet1.getCell('B5').value = reportData.data.filter.status;
+        sheet1.getCell('A6').value = 'Dicetak';
+        sheet1.getCell('B6').value = `${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`;
+        
+        // Ringkasan Section
+        sheet1.mergeCells('A8:B8');
+        const ringkasanTitle = sheet1.getCell('A8');
+        ringkasanTitle.value = 'RINGKASAN PEGAWAI';
+        ringkasanTitle.font = { name: 'Calibri', size: 12, bold: true };
+        ringkasanTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC7D2FE' } };
+        ringkasanTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Table Header
+        sheet1.getCell('A9').value = 'Metrik';
+        sheet1.getCell('B9').value = 'Nilai';
+        ['A9', 'B9'].forEach(cell => {
+            const c = sheet1.getCell(cell);
+            c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
+            c.alignment = { horizontal: 'center', vertical: 'middle' };
+            c.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+        
+        // Ringkasan Data
+        const ringkasanData = [
+            ['Total Pegawai', `${reportData.data.ringkasan.totalPegawai} orang`],
+            ['Pegawai Aktif', `${reportData.data.ringkasan.pegawaiAktif} orang`],
+            ['Pegawai Non-Aktif', `${reportData.data.ringkasan.pegawaiNonAktif} orang`],
+            ['Owner', `${reportData.data.ringkasan.roleCount.owner} orang`],
+            ['Admin', `${reportData.data.ringkasan.roleCount.admin} orang`],
+            ['Kasir', `${reportData.data.ringkasan.roleCount.kasir} orang`]
+        ];
+        
+        ringkasanData.forEach((row, idx) => {
+            const rowNum = 10 + idx;
+            sheet1.getCell(`A${rowNum}`).value = row[0];
+            sheet1.getCell(`B${rowNum}`).value = row[1];
+            
+            ['A', 'B'].forEach(col => {
+                const cell = sheet1.getCell(`${col}${rowNum}`);
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                if (idx % 2 === 0) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                }
+            });
+        });
+        
+        // Column widths
+        sheet1.getColumn('A').width = 35;
+        sheet1.getColumn('B').width = 30;
+        
+        // ===== SHEET 2: PEGAWAI PER ROLE =====
+        if (reportData.data.pegawaiByRole.length > 0) {
+            const sheet2 = workbook.addWorksheet('Per Role', {
+                properties: { tabColor: { argb: 'FF6366F1' } }
+            });
+            
+            // Title
+            sheet2.mergeCells('A1:D1');
+            const title2 = sheet2.getCell('A1');
+            title2.value = 'PEGAWAI PER ROLE';
+            title2.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF6366F1' } };
+            title2.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers2 = ['Role', 'Total', 'Aktif', 'Non-Aktif'];
+            headers2.forEach((header, idx) => {
+                const cell = sheet2.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.pegawaiByRole.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet2.getCell(`A${rowNum}`).value = item.role;
+                sheet2.getCell(`B${rowNum}`).value = item.jumlah;
+                sheet2.getCell(`C${rowNum}`).value = item.aktif;
+                sheet2.getCell(`D${rowNum}`).value = item.nonAktif;
+                
+                ['A', 'B', 'C', 'D'].forEach(col => {
+                    const cell = sheet2.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                    }
+                });
+                
+                sheet2.getCell(`B${rowNum}`).alignment = { horizontal: 'center' };
+                sheet2.getCell(`C${rowNum}`).alignment = { horizontal: 'center' };
+                sheet2.getCell(`D${rowNum}`).alignment = { horizontal: 'center' };
+            });
+            
+            // Total Row
+            const totalRow2 = 4 + reportData.data.pegawaiByRole.length;
+            sheet2.getCell(`A${totalRow2}`).value = 'TOTAL';
+            sheet2.getCell(`B${totalRow2}`).value = reportData.data.pegawaiByRole.reduce((sum: number, item: any) => sum + item.jumlah, 0);
+            sheet2.getCell(`C${totalRow2}`).value = reportData.data.pegawaiByRole.reduce((sum: number, item: any) => sum + item.aktif, 0);
+            sheet2.getCell(`D${totalRow2}`).value = reportData.data.pegawaiByRole.reduce((sum: number, item: any) => sum + item.nonAktif, 0);
+            
+            ['A', 'B', 'C', 'D'].forEach(col => {
+                const cell = sheet2.getCell(`${col}${totalRow2}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC7D2FE' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet2.getColumn('A').width = 20;
+            sheet2.getColumn('B').width = 15;
+            sheet2.getColumn('C').width = 15;
+            sheet2.getColumn('D').width = 15;
+        }
+        
+        // ===== SHEET 3: PEGAWAI PER TOKO =====
+        if (reportData.data.pegawaiByToko.length > 0) {
+            const sheet3 = workbook.addWorksheet('Per Toko', {
+                properties: { tabColor: { argb: 'FF6366F1' } }
+            });
+            
+            // Title
+            sheet3.mergeCells('A1:D1');
+            const title3 = sheet3.getCell('A1');
+            title3.value = 'PEGAWAI PER TOKO';
+            title3.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF6366F1' } };
+            title3.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers3 = ['Toko', 'Total', 'Aktif', 'Non-Aktif'];
+            headers3.forEach((header, idx) => {
+                const cell = sheet3.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.pegawaiByToko.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet3.getCell(`A${rowNum}`).value = item.toko;
+                sheet3.getCell(`B${rowNum}`).value = item.jumlahPegawai;
+                sheet3.getCell(`C${rowNum}`).value = item.aktif;
+                sheet3.getCell(`D${rowNum}`).value = item.nonAktif;
+                
+                ['A', 'B', 'C', 'D'].forEach(col => {
+                    const cell = sheet3.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                    }
+                });
+                
+                sheet3.getCell(`B${rowNum}`).alignment = { horizontal: 'center' };
+                sheet3.getCell(`C${rowNum}`).alignment = { horizontal: 'center' };
+                sheet3.getCell(`D${rowNum}`).alignment = { horizontal: 'center' };
+            });
+            
+            // Total Row
+            const totalRow3 = 4 + reportData.data.pegawaiByToko.length;
+            sheet3.getCell(`A${totalRow3}`).value = 'TOTAL';
+            sheet3.getCell(`B${totalRow3}`).value = reportData.data.pegawaiByToko.reduce((sum: number, item: any) => sum + item.jumlahPegawai, 0);
+            sheet3.getCell(`C${totalRow3}`).value = reportData.data.pegawaiByToko.reduce((sum: number, item: any) => sum + item.aktif, 0);
+            sheet3.getCell(`D${totalRow3}`).value = reportData.data.pegawaiByToko.reduce((sum: number, item: any) => sum + item.nonAktif, 0);
+            
+            ['A', 'B', 'C', 'D'].forEach(col => {
+                const cell = sheet3.getCell(`${col}${totalRow3}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFC7D2FE' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet3.getColumn('A').width = 30;
+            sheet3.getColumn('B').width = 15;
+            sheet3.getColumn('C').width = 15;
+            sheet3.getColumn('D').width = 15;
+        }
+        
+        // ===== SHEET 4: DETAIL PEGAWAI =====
+        if (reportData.data.pegawaiList.length > 0) {
+            const sheet4 = workbook.addWorksheet('Detail Pegawai', {
+                properties: { tabColor: { argb: 'FF6366F1' } }
+            });
+            
+            // Title
+            sheet4.mergeCells('A1:F1');
+            const title4 = sheet4.getCell('A1');
+            title4.value = 'DETAIL PEGAWAI';
+            title4.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF6366F1' } };
+            title4.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers4 = ['Nama', 'Email', 'Role', 'Toko', 'Status', 'Terdaftar'];
+            headers4.forEach((header, idx) => {
+                const cell = sheet4.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF6366F1' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.pegawaiList.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet4.getCell(`A${rowNum}`).value = item.name;
+                sheet4.getCell(`B${rowNum}`).value = item.email;
+                sheet4.getCell(`C${rowNum}`).value = item.role;
+                sheet4.getCell(`D${rowNum}`).value = item.toko;
+                sheet4.getCell(`E${rowNum}`).value = item.isActive ? 'Aktif' : 'Non-Aktif';
+                sheet4.getCell(`F${rowNum}`).value = new Date(item.createdAt).toLocaleDateString('id-ID');
+                
+                ['A', 'B', 'C', 'D', 'E', 'F'].forEach(col => {
+                    const cell = sheet4.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                    }
+                });
+                
+                sheet4.getCell(`C${rowNum}`).alignment = { horizontal: 'center' };
+                sheet4.getCell(`E${rowNum}`).alignment = { horizontal: 'center' };
+                
+                // Color status
+                const statusCell = sheet4.getCell(`E${rowNum}`);
+                if (item.isActive) {
+                    statusCell.font = { bold: true, color: { argb: 'FF10B981' } };
+                } else {
+                    statusCell.font = { bold: true, color: { argb: 'FF9CA3AF' } };
+                }
+            });
+            
+            // Column widths
+            sheet4.getColumn('A').width = 25;
+            sheet4.getColumn('B').width = 30;
+            sheet4.getColumn('C').width = 15;
+            sheet4.getColumn('D').width = 25;
+            sheet4.getColumn('E').width = 12;
+            sheet4.getColumn('F').width = 15;
+        }
+        
+        // Save Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Laporan-Pegawai-${new Date().getTime()}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error in exportPegawaiExcel:', error);
+        throw error;
+    }
+}
