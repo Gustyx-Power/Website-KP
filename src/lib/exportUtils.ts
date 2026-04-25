@@ -2418,3 +2418,538 @@ export async function exportReturExcel(reportData: any) {
         throw error;
     }
 }
+
+export async function exportStokTokoPDF(reportData: any) {
+    try {
+        const { default: jsPDF } = await import('jspdf');
+        const { default: autoTable } = await import('jspdf-autotable');
+
+        const doc = new jsPDF();
+        
+        // Header
+        doc.setFontSize(20);
+        doc.setTextColor(48, 102, 119);
+        doc.text('IMD Clothes', 14, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text('CV. Inti Media Digital', 14, 26);
+        
+        doc.setFontSize(16);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Laporan Stok Per Toko', 14, 40);
+        
+        // Info
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text(`Filter: ${reportData.data.filter.toko}`, 14, 47);
+        doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`, 14, 52);
+        
+        let yPos = 60;
+        
+        // Ringkasan
+        doc.setFontSize(12);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Ringkasan Stok', 14, yPos);
+        yPos += 8;
+        
+        const ringkasanData = [
+            ['Total Toko', `${reportData.data.ringkasan.totalToko} toko`],
+            ['Total Kategori', `${reportData.data.ringkasan.totalKategori} kategori`],
+            ['Total Unit Stok', `${reportData.data.ringkasan.totalUnit.toLocaleString('id-ID')} unit`],
+            ['Total Nilai Modal', formatRupiah(reportData.data.ringkasan.totalNilaiModal)],
+            ['Stok Menipis (< 15 unit)', `${reportData.data.ringkasan.jumlahStokMenipis} item`]
+        ];
+        
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Metrik', 'Nilai']],
+            body: ringkasanData,
+            theme: 'grid',
+            headStyles: { fillColor: [147, 51, 234], textColor: 255 },
+            styles: { fontSize: 9 }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+        
+        // Ringkasan Per Toko
+        if (reportData.data.stokByToko.length > 0 && yPos < 220) {
+            doc.setFontSize(12);
+            doc.setTextColor(44, 52, 55);
+            doc.text('Ringkasan Per Toko', 14, yPos);
+            yPos += 8;
+            
+            const tokoData = reportData.data.stokByToko.map((item: any) => [
+                item.toko,
+                `${item.jumlahKategori} kategori`,
+                `${item.totalUnit} unit`,
+                formatRupiah(item.totalNilaiModal)
+            ]);
+            
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Toko', 'Jumlah Kategori', 'Total Unit', 'Nilai Modal']],
+                body: tokoData,
+                theme: 'striped',
+                headStyles: { fillColor: [147, 51, 234], textColor: 255 },
+                styles: { fontSize: 8 },
+                columnStyles: {
+                    0: { cellWidth: 45 },
+                    1: { cellWidth: 35 },
+                    2: { cellWidth: 30 },
+                    3: { cellWidth: 40 }
+                }
+            });
+            
+            yPos = (doc as any).lastAutoTable.finalY + 10;
+        }
+        
+        // Detail per toko (halaman terpisah untuk setiap toko)
+        reportData.data.stokByToko.forEach((toko: any, tokoIdx: number) => {
+            if (tokoIdx > 0 || yPos > 220) {
+                doc.addPage();
+                yPos = 20;
+            }
+            
+            doc.setFontSize(12);
+            doc.setTextColor(147, 51, 234);
+            doc.text(`Detail Stok - ${toko.toko}`, 14, yPos);
+            yPos += 5;
+            
+            doc.setFontSize(9);
+            doc.setTextColor(95, 107, 111);
+            doc.text(`Total: ${toko.totalUnit} unit | Nilai: ${formatRupiah(toko.totalNilaiModal)}`, 14, yPos);
+            yPos += 8;
+            
+            const itemData = toko.items.slice(0, 30).map((item: any) => [
+                item.kategori,
+                `${item.jumlah} unit`,
+                formatRupiah(item.hargaModal),
+                formatRupiah(item.nilaiTotal),
+                item.status
+            ]);
+            
+            autoTable(doc, {
+                startY: yPos,
+                head: [['Kategori', 'Stok', 'Harga Modal', 'Nilai Total', 'Status']],
+                body: itemData,
+                theme: 'striped',
+                headStyles: { fillColor: [147, 51, 234], textColor: 255 },
+                styles: { fontSize: 8 },
+                columnStyles: {
+                    1: { halign: 'center' },
+                    4: { halign: 'center' }
+                },
+                didParseCell: function(data: any) {
+                    if (data.section === 'body' && data.column.index === 4) {
+                        const status = data.cell.raw;
+                        if (status === 'Kritis') {
+                            data.cell.styles.textColor = [220, 38, 38];
+                            data.cell.styles.fontStyle = 'bold';
+                        } else if (status === 'Menipis') {
+                            data.cell.styles.textColor = [245, 158, 11];
+                            data.cell.styles.fontStyle = 'bold';
+                        }
+                    }
+                }
+            });
+            
+            yPos = (doc as any).lastAutoTable.finalY + 15;
+        });
+        
+        // Footer
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(
+                `Halaman ${i} dari ${pageCount}`,
+                doc.internal.pageSize.width / 2,
+                doc.internal.pageSize.height - 10,
+                { align: 'center' }
+            );
+        }
+        
+        doc.save(`Laporan-Stok-Per-Toko-${new Date().getTime()}.pdf`);
+    } catch (error) {
+        console.error('Error in exportStokTokoPDF:', error);
+        throw error;
+    }
+}
+
+export async function exportStokTokoExcel(reportData: any) {
+    try {
+        const ExcelJS = await import('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'IMD Clothes';
+        workbook.created = new Date();
+        
+        // ===== SHEET 1: RINGKASAN =====
+        const sheet1 = workbook.addWorksheet('Ringkasan', {
+            properties: { tabColor: { argb: 'FF9333EA' } }
+        });
+        
+        // Title
+        sheet1.mergeCells('A1:B1');
+        const titleCell = sheet1.getCell('A1');
+        titleCell.value = 'LAPORAN STOK PER TOKO';
+        titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF9333EA' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        sheet1.mergeCells('A2:B2');
+        const subtitleCell = sheet1.getCell('A2');
+        subtitleCell.value = 'IMD Clothes - CV. Inti Media Digital';
+        subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: 'FF5f6b6f' } };
+        subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Info
+        sheet1.getCell('A4').value = 'Filter';
+        sheet1.getCell('B4').value = reportData.data.filter.toko;
+        sheet1.getCell('A5').value = 'Dicetak';
+        sheet1.getCell('B5').value = `${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`;
+        
+        // Ringkasan Section
+        sheet1.mergeCells('A7:B7');
+        const ringkasanTitle = sheet1.getCell('A7');
+        ringkasanTitle.value = 'RINGKASAN STOK';
+        ringkasanTitle.font = { name: 'Calibri', size: 12, bold: true };
+        ringkasanTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9D5FF' } };
+        ringkasanTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Table Header
+        sheet1.getCell('A8').value = 'Metrik';
+        sheet1.getCell('B8').value = 'Nilai';
+        ['A8', 'B8'].forEach(cell => {
+            const c = sheet1.getCell(cell);
+            c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF9333EA' } };
+            c.alignment = { horizontal: 'center', vertical: 'middle' };
+            c.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+        
+        // Ringkasan Data
+        const ringkasanData = [
+            ['Total Toko', `${reportData.data.ringkasan.totalToko} toko`],
+            ['Total Kategori', `${reportData.data.ringkasan.totalKategori} kategori`],
+            ['Total Unit Stok', `${reportData.data.ringkasan.totalUnit.toLocaleString('id-ID')} unit`],
+            ['Total Nilai Modal', reportData.data.ringkasan.totalNilaiModal],
+            ['Stok Menipis (< 15 unit)', `${reportData.data.ringkasan.jumlahStokMenipis} item`]
+        ];
+        
+        ringkasanData.forEach((row, idx) => {
+            const rowNum = 9 + idx;
+            sheet1.getCell(`A${rowNum}`).value = row[0];
+            sheet1.getCell(`B${rowNum}`).value = row[1];
+            
+            if (idx === 3) {
+                sheet1.getCell(`B${rowNum}`).numFmt = '"Rp "#,##0';
+            }
+            
+            ['A', 'B'].forEach(col => {
+                const cell = sheet1.getCell(`${col}${rowNum}`);
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                if (idx % 2 === 0) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                }
+            });
+        });
+        
+        // Column widths
+        sheet1.getColumn('A').width = 35;
+        sheet1.getColumn('B').width = 30;
+        
+        // ===== SHEET 2: RINGKASAN PER TOKO =====
+        if (reportData.data.stokByToko.length > 0) {
+            const sheet2 = workbook.addWorksheet('Ringkasan Per Toko', {
+                properties: { tabColor: { argb: 'FF9333EA' } }
+            });
+            
+            // Title
+            sheet2.mergeCells('A1:E1');
+            const title2 = sheet2.getCell('A1');
+            title2.value = 'RINGKASAN STOK PER TOKO';
+            title2.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF9333EA' } };
+            title2.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers2 = ['Toko', 'Jumlah Kategori', 'Total Unit', 'Nilai Modal', 'Stok Menipis'];
+            headers2.forEach((header, idx) => {
+                const cell = sheet2.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF9333EA' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.stokByToko.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet2.getCell(`A${rowNum}`).value = item.toko;
+                sheet2.getCell(`B${rowNum}`).value = item.jumlahKategori;
+                sheet2.getCell(`C${rowNum}`).value = item.totalUnit;
+                sheet2.getCell(`D${rowNum}`).value = item.totalNilaiModal;
+                sheet2.getCell(`D${rowNum}`).numFmt = '"Rp "#,##0';
+                sheet2.getCell(`E${rowNum}`).value = item.stokMenipis;
+                
+                ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                    const cell = sheet2.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                    }
+                });
+                
+                sheet2.getCell(`B${rowNum}`).alignment = { horizontal: 'center' };
+                sheet2.getCell(`C${rowNum}`).alignment = { horizontal: 'center' };
+                sheet2.getCell(`E${rowNum}`).alignment = { horizontal: 'center' };
+            });
+            
+            // Total Row
+            const totalRow2 = 4 + reportData.data.stokByToko.length;
+            sheet2.getCell(`A${totalRow2}`).value = 'TOTAL';
+            sheet2.getCell(`B${totalRow2}`).value = reportData.data.stokByToko.reduce((sum: number, item: any) => sum + item.jumlahKategori, 0);
+            sheet2.getCell(`C${totalRow2}`).value = reportData.data.stokByToko.reduce((sum: number, item: any) => sum + item.totalUnit, 0);
+            sheet2.getCell(`D${totalRow2}`).value = reportData.data.stokByToko.reduce((sum: number, item: any) => sum + item.totalNilaiModal, 0);
+            sheet2.getCell(`D${totalRow2}`).numFmt = '"Rp "#,##0';
+            sheet2.getCell(`E${totalRow2}`).value = reportData.data.stokByToko.reduce((sum: number, item: any) => sum + item.stokMenipis, 0);
+            
+            ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                const cell = sheet2.getCell(`${col}${totalRow2}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9D5FF' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet2.getColumn('A').width = 30;
+            sheet2.getColumn('B').width = 18;
+            sheet2.getColumn('C').width = 15;
+            sheet2.getColumn('D').width = 22; // Diperlebar untuk currency format
+            sheet2.getColumn('E').width = 15;
+        }
+        
+        // ===== SHEET 3+: DETAIL PER TOKO =====
+        reportData.data.stokByToko.forEach((toko: any) => {
+            const sheetName = toko.toko.substring(0, 30); // Excel sheet name max 31 chars
+            const sheet = workbook.addWorksheet(sheetName, {
+                properties: { tabColor: { argb: 'FF9333EA' } }
+            });
+            
+            // Title
+            sheet.mergeCells('A1:E1');
+            const title = sheet.getCell('A1');
+            title.value = `DETAIL STOK - ${toko.toko}`;
+            title.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF9333EA' } };
+            title.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Info
+            sheet.getCell('A3').value = 'Total Unit';
+            sheet.getCell('B3').value = `${toko.totalUnit} unit`;
+            sheet.getCell('A4').value = 'Nilai Modal';
+            sheet.getCell('B4').value = toko.totalNilaiModal;
+            sheet.getCell('B4').numFmt = '"Rp "#,##0';
+            
+            // Merge cells untuk info agar lebih lebar
+            sheet.mergeCells('B3:D3');
+            sheet.mergeCells('B4:D4');
+            
+            // Table Header
+            const headers = ['Kategori', 'Stok', 'Harga Modal', 'Nilai Total', 'Status'];
+            headers.forEach((header, idx) => {
+                const cell = sheet.getCell(6, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF9333EA' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            toko.items.forEach((item: any, idx: number) => {
+                const rowNum = 7 + idx;
+                sheet.getCell(`A${rowNum}`).value = item.kategori;
+                sheet.getCell(`B${rowNum}`).value = item.jumlah;
+                sheet.getCell(`C${rowNum}`).value = item.hargaModal;
+                sheet.getCell(`C${rowNum}`).numFmt = '"Rp "#,##0';
+                sheet.getCell(`D${rowNum}`).value = item.nilaiTotal;
+                sheet.getCell(`D${rowNum}`).numFmt = '"Rp "#,##0';
+                sheet.getCell(`E${rowNum}`).value = item.status;
+                
+                ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                    const cell = sheet.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                    }
+                });
+                
+                sheet.getCell(`B${rowNum}`).alignment = { horizontal: 'center' };
+                sheet.getCell(`E${rowNum}`).alignment = { horizontal: 'center' };
+                
+                // Color status
+                const statusCell = sheet.getCell(`E${rowNum}`);
+                if (item.status === 'Kritis') {
+                    statusCell.font = { bold: true, color: { argb: 'FFDC2626' } };
+                } else if (item.status === 'Menipis') {
+                    statusCell.font = { bold: true, color: { argb: 'FFF59E0B' } };
+                } else {
+                    statusCell.font = { bold: true, color: { argb: 'FF10B981' } };
+                }
+            });
+            
+            // Total Row
+            const totalRow = 7 + toko.items.length;
+            sheet.getCell(`A${totalRow}`).value = 'TOTAL';
+            sheet.getCell(`B${totalRow}`).value = toko.totalUnit;
+            sheet.getCell(`C${totalRow}`).value = '';
+            sheet.getCell(`D${totalRow}`).value = toko.totalNilaiModal;
+            sheet.getCell(`D${totalRow}`).numFmt = '"Rp "#,##0';
+            sheet.getCell(`E${totalRow}`).value = '';
+            
+            ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                const cell = sheet.getCell(`${col}${totalRow}`);
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE9D5FF' } };
+                cell.border = {
+                    top: { style: 'medium' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'medium' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Column widths
+            sheet.getColumn('A').width = 30; // Untuk nama kategori
+            sheet.getColumn('B').width = 15; // Untuk stok
+            sheet.getColumn('C').width = 22; // Diperlebar untuk currency format
+            sheet.getColumn('D').width = 22; // Diperlebar untuk currency format
+            sheet.getColumn('E').width = 12; // Untuk status
+        });
+        
+        // ===== SHEET LAST: STOK MENIPIS =====
+        if (reportData.data.stokMenipis.length > 0) {
+            const sheetLast = workbook.addWorksheet('Stok Menipis', {
+                properties: { tabColor: { argb: 'FFDC2626' } }
+            });
+            
+            // Title
+            sheetLast.mergeCells('A1:E1');
+            const titleLast = sheetLast.getCell('A1');
+            titleLast.value = 'STOK MENIPIS (< 15 UNIT)';
+            titleLast.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFDC2626' } };
+            titleLast.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headersLast = ['Toko', 'Kategori', 'Stok Tersisa', 'Harga Modal', 'Status'];
+            headersLast.forEach((header, idx) => {
+                const cell = sheetLast.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDC2626' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.stokMenipis.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheetLast.getCell(`A${rowNum}`).value = item.toko;
+                sheetLast.getCell(`B${rowNum}`).value = item.kategori;
+                sheetLast.getCell(`C${rowNum}`).value = item.jumlah;
+                sheetLast.getCell(`D${rowNum}`).value = item.hargaModal;
+                sheetLast.getCell(`D${rowNum}`).numFmt = '"Rp "#,##0';
+                sheetLast.getCell(`E${rowNum}`).value = item.status;
+                
+                ['A', 'B', 'C', 'D', 'E'].forEach(col => {
+                    const cell = sheetLast.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    if (idx % 2 === 0) {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFfef2f2' } };
+                    }
+                });
+                
+                const stokCell = sheetLast.getCell(`C${rowNum}`);
+                stokCell.alignment = { horizontal: 'center' };
+                if (item.status === 'Kritis') {
+                    stokCell.font = { bold: true, color: { argb: 'FFDC2626' } };
+                    stokCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFECACA' } };
+                }
+                
+                const statusCell = sheetLast.getCell(`E${rowNum}`);
+                statusCell.alignment = { horizontal: 'center' };
+                if (item.status === 'Kritis') {
+                    statusCell.font = { bold: true, color: { argb: 'FFDC2626' } };
+                } else {
+                    statusCell.font = { bold: true, color: { argb: 'FFF59E0B' } };
+                }
+            });
+            
+            // Column widths
+            sheetLast.getColumn('A').width = 25;
+            sheetLast.getColumn('B').width = 30;
+            sheetLast.getColumn('C').width = 15;
+            sheetLast.getColumn('D').width = 22; // Diperlebar untuk currency format
+            sheetLast.getColumn('E').width = 12;
+        }
+        
+        // Save Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Laporan-Stok-Per-Toko-${new Date().getTime()}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error in exportStokTokoExcel:', error);
+        throw error;
+    }
+}

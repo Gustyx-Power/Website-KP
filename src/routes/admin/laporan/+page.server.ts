@@ -738,5 +738,116 @@ export const actions: Actions = {
                 returByKategori: kategoriDetails
             }
         };
+    },
+
+    getStokTokoData: async ({ request }) => {
+        const formData = await request.formData();
+        const tokoId = formData.get('tokoId') as string;
+
+        // Build where clause
+        const whereClause: any = {};
+
+        if (tokoId && tokoId !== 'semua') {
+            whereClause.id_toko = parseInt(tokoId);
+        }
+
+        // Get all stock with details
+        const stokList = await prisma.stok.findMany({
+            where: whereClause,
+            include: {
+                kategori: true,
+                toko: true
+            },
+            orderBy: [
+                { id_toko: 'asc' },
+                { jumlah: 'desc' }
+            ]
+        });
+
+        // Calculate totals
+        const totalUnit = stokList.reduce((sum, item) => sum + (item.jumlah || 0), 0);
+        const totalNilaiModal = stokList.reduce((sum, item) => {
+            const hargaModal = item.harga_modal || 0;
+            const jumlah = item.jumlah || 0;
+            return sum + (jumlah * hargaModal);
+        }, 0);
+
+        // Get low stock items (< 15 unit)
+        const stokMenipis = stokList.filter(item => item.jumlah < 15);
+
+        // Group by toko
+        const stokByToko: any = {};
+        stokList.forEach(item => {
+            const tokoName = item.toko.nama_toko;
+            if (!stokByToko[tokoName]) {
+                stokByToko[tokoName] = {
+                    toko: tokoName,
+                    alamat: item.toko.alamat,
+                    isPusat: item.toko.is_pusat,
+                    totalUnit: 0,
+                    totalNilaiModal: 0,
+                    jumlahKategori: 0,
+                    stokMenipis: 0,
+                    items: []
+                };
+            }
+            
+            const hargaModal = item.harga_modal || 0;
+            const jumlah = item.jumlah || 0;
+            const nilaiTotal = jumlah * hargaModal;
+            
+            stokByToko[tokoName].totalUnit += jumlah;
+            stokByToko[tokoName].totalNilaiModal += nilaiTotal;
+            stokByToko[tokoName].jumlahKategori += 1;
+            if (jumlah < 15) {
+                stokByToko[tokoName].stokMenipis += 1;
+            }
+            
+            stokByToko[tokoName].items.push({
+                kategori: item.kategori.nama_kategori,
+                jumlah: jumlah,
+                hargaModal: hargaModal,
+                nilaiTotal: nilaiTotal,
+                status: jumlah < 5 ? 'Kritis' : jumlah < 15 ? 'Menipis' : 'Aman'
+            });
+        });
+
+        const tokoSummary = Object.values(stokByToko);
+
+        // Get toko name if filtered
+        let tokoName = 'Semua Toko';
+        if (tokoId && tokoId !== 'semua') {
+            const toko = await prisma.toko.findUnique({
+                where: { id: parseInt(tokoId) }
+            });
+            tokoName = toko?.nama_toko || 'Unknown';
+        }
+
+        // Count toko
+        const uniqueToko = new Set(stokList.map(s => s.id_toko)).size;
+
+        return {
+            success: true,
+            data: {
+                filter: {
+                    toko: tokoName
+                },
+                ringkasan: {
+                    totalToko: uniqueToko,
+                    totalKategori: stokList.length,
+                    totalUnit,
+                    totalNilaiModal,
+                    jumlahStokMenipis: stokMenipis.length
+                },
+                stokByToko: tokoSummary,
+                stokMenipis: stokMenipis.map(item => ({
+                    toko: item.toko.nama_toko,
+                    kategori: item.kategori.nama_kategori,
+                    jumlah: item.jumlah || 0,
+                    hargaModal: item.harga_modal || 0,
+                    status: item.jumlah < 5 ? 'Kritis' : 'Menipis'
+                }))
+            }
+        };
     }
 };
