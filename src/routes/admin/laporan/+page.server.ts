@@ -1098,5 +1098,136 @@ export const actions: Actions = {
                 bottom3
             }
         };
+    },
+
+    getInvoiceData: async ({ request }) => {
+        const formData = await request.formData();
+        const distribusiId = formData.get('distribusiId') as string;
+
+        if (!distribusiId) {
+            return { success: false, error: 'ID Distribusi tidak valid' };
+        }
+
+        // Get distribusi with all details
+        const distribusi = await prisma.distribusi.findUnique({
+            where: { id: parseInt(distribusiId) },
+            include: {
+                tokoAsal: true,
+                tokoTujuan: true,
+                createdBy: {
+                    select: { name: true, email: true }
+                },
+                items: {
+                    include: {
+                        kategori: true
+                    }
+                }
+            }
+        });
+
+        if (!distribusi) {
+            return { success: false, error: 'Distribusi tidak ditemukan' };
+        }
+
+        // Calculate nilai for each item
+        const itemsWithNilai = await Promise.all(
+            distribusi.items.map(async (item) => {
+                const stok = await prisma.stok.findFirst({
+                    where: {
+                        id_toko: distribusi.id_toko_asal,
+                        id_kategori: item.id_kategori
+                    }
+                });
+                const hargaModal = stok?.harga_modal || 0;
+                const subtotal = hargaModal * item.jumlah;
+
+                return {
+                    kategori: item.kategori.nama_kategori,
+                    jumlah: item.jumlah,
+                    hargaModal,
+                    subtotal
+                };
+            })
+        );
+
+        const totalNilai = itemsWithNilai.reduce((sum, item) => sum + item.subtotal, 0);
+
+        return {
+            success: true,
+            data: {
+                distribusi: {
+                    id: distribusi.id,
+                    tanggal: distribusi.tanggal.toISOString(),
+                    status: distribusi.status,
+                    keterangan: distribusi.keterangan
+                },
+                tokoAsal: {
+                    nama: distribusi.tokoAsal.nama_toko,
+                    alamat: distribusi.tokoAsal.alamat
+                },
+                tokoTujuan: {
+                    nama: distribusi.tokoTujuan.nama_toko,
+                    alamat: distribusi.tokoTujuan.alamat
+                },
+                items: itemsWithNilai,
+                totalNilai,
+                totalItem: itemsWithNilai.reduce((sum, item) => sum + item.jumlah, 0),
+                createdBy: distribusi.createdBy.name
+            }
+        };
+    },
+
+    getDistribusiList: async ({ request }) => {
+        const formData = await request.formData();
+        const periode = formData.get('periode') as string;
+        const customStartDate = formData.get('customStartDate') as string;
+        const customEndDate = formData.get('customEndDate') as string;
+
+        // Calculate date range
+        let startDate = new Date();
+        let endDate = new Date();
+
+        if (periode === 'custom' && customStartDate && customEndDate) {
+            startDate = new Date(customStartDate);
+            endDate = new Date(customEndDate);
+        } else {
+            const days = parseInt(periode) || 30;
+            startDate.setDate(startDate.getDate() - days);
+        }
+
+        // Get distribusi list
+        const distribusiList = await prisma.distribusi.findMany({
+            where: {
+                tanggal: { gte: startDate, lte: endDate }
+            },
+            include: {
+                tokoAsal: true,
+                tokoTujuan: true,
+                items: {
+                    include: {
+                        kategori: true
+                    }
+                }
+            },
+            orderBy: { tanggal: 'desc' },
+            take: 50
+        });
+
+        const formattedList = distribusiList.map(d => ({
+            id: d.id,
+            tanggal: d.tanggal.toISOString(),
+            tokoAsal: d.tokoAsal.nama_toko,
+            tokoTujuan: d.tokoTujuan.nama_toko,
+            status: d.status,
+            totalItem: d.items.reduce((sum, item) => sum + item.jumlah, 0),
+            jumlahKategori: d.items.length
+        }));
+
+        return {
+            success: true,
+            data: {
+                distribusiList: formattedList
+            }
+        };
     }
 };

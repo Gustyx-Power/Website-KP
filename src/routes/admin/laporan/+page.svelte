@@ -100,6 +100,9 @@
 	let selectedLaporan: string | null = null;
 	let showFilterModal = false;
 	let isExporting = false;
+	let showDistribusiList = false;
+	let distribusiList: any[] = [];
+	let selectedDistribusi: string | null = null;
 
 	// Filter states
 	let filterPeriode = '7';
@@ -112,12 +115,46 @@
 
 	function openFilterModal(laporanId: string) {
 		selectedLaporan = laporanId;
-		showFilterModal = true;
+		
+		// For invoice, show distribusi list instead of filter modal
+		if (laporanId === 'invoice') {
+			loadDistribusiList();
+			showDistribusiList = true;
+		} else {
+			showFilterModal = true;
+		}
 	}
 
 	function closeFilterModal() {
 		showFilterModal = false;
+		showDistribusiList = false;
 		selectedLaporan = null;
+		selectedDistribusi = null;
+		distribusiList = [];
+	}
+
+	async function loadDistribusiList() {
+		try {
+			const formData = new FormData();
+			formData.append('periode', '30'); // Default 30 days
+
+			const response = await fetch('?/getDistribusiList', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+			
+			if (result.type === 'success') {
+				const { parse } = await import('devalue');
+				const deserializedData = parse(result.data);
+				const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+				distribusiList = reportData.data.distribusiList || [];
+			}
+		} catch (error) {
+			console.error('Error loading distribusi list:', error);
+			alert('Gagal memuat daftar distribusi');
+		}
 	}
 
 	function formatRupiah(amount: number): string {
@@ -474,9 +511,88 @@
 			return;
 		}
 
+		// Handle Invoice & Surat Jalan
+		if (selectedLaporan === 'invoice' && selectedDistribusi) {
+			isExporting = true;
+			try {
+				const formData = new FormData();
+				formData.append('distribusiId', selectedDistribusi);
+
+				const response = await fetch('?/getInvoiceData', {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+				
+				if (result.type === 'success') {
+					const { parse } = await import('devalue');
+					const deserializedData = parse(result.data);
+					const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+					
+					if (!reportData || !reportData.data) {
+						throw new Error('Data laporan tidak valid');
+					}
+					
+					const { exportInvoicePDF } = await import('$lib/exportUtils');
+					await exportInvoicePDF(reportData);
+				} else {
+					throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+				}
+			} catch (error) {
+				console.error('Error exporting PDF:', error);
+				alert(`Gagal mengekspor PDF: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+			} finally {
+				isExporting = false;
+				closeFilterModal();
+			}
+			return;
+		}
+
 		// Other reports
 		alert(`Ekspor PDF untuk ${selectedLaporan} akan segera diimplementasikan`);
 		closeFilterModal();
+	}
+
+	async function exportSuratJalan() {
+		if (!selectedDistribusi) {
+			alert('Pilih distribusi terlebih dahulu');
+			return;
+		}
+
+		isExporting = true;
+		try {
+			const formData = new FormData();
+			formData.append('distribusiId', selectedDistribusi);
+
+			const response = await fetch('?/getInvoiceData', {
+				method: 'POST',
+				body: formData
+			});
+
+			const result = await response.json();
+			
+			if (result.type === 'success') {
+				const { parse } = await import('devalue');
+				const deserializedData = parse(result.data);
+				const reportData = Array.isArray(deserializedData) ? deserializedData[0] : deserializedData;
+				
+				if (!reportData || !reportData.data) {
+					throw new Error('Data laporan tidak valid');
+				}
+				
+				const { exportSuratJalanPDF } = await import('$lib/exportUtils');
+				await exportSuratJalanPDF(reportData);
+			} else {
+				throw new Error(result.errors?.[0]?.message || 'Gagal mengambil data laporan');
+			}
+		} catch (error) {
+			console.error('Error exporting Surat Jalan:', error);
+			alert(`Gagal mengekspor Surat Jalan: ${error instanceof Error ? error.message : 'Silakan coba lagi.'}`);
+		} finally {
+			isExporting = false;
+			closeFilterModal();
+		}
 	}
 
 	async function exportExcel() {
@@ -1114,6 +1230,145 @@
 							/>
 						</svg>
 						Ekspor Excel
+					{/if}
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+
+<!-- Distribusi Selection Modal -->
+{#if showDistribusiList}
+	<div
+		class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+		on:click={closeFilterModal}
+		on:keydown={(e) => e.key === 'Escape' && closeFilterModal()}
+		role="button"
+		tabindex="0"
+	>
+		<div
+			class="bg-[#ffffff] rounded-xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+			on:click|stopPropagation
+			on:keydown|stopPropagation
+			role="dialog"
+			tabindex="-1"
+		>
+			<div class="flex items-start justify-between mb-4">
+				<div>
+					<h3
+						class="text-xl font-bold text-[#2c3437] mb-1"
+						style="font-family: 'Manrope', sans-serif;"
+					>
+						Pilih Distribusi
+					</h3>
+					<p class="text-sm text-[#5f6b6f]">Pilih distribusi untuk generate Invoice & Surat Jalan</p>
+				</div>
+				<button
+					on:click={closeFilterModal}
+					class="text-[#5f6b6f] hover:text-[#2c3437] transition-colors"
+				>
+					<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+						<path
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							stroke-width="2"
+							d="M6 18L18 6M6 6l12 12"
+						/>
+					</svg>
+				</button>
+			</div>
+
+			<!-- Distribusi List -->
+			<div class="space-y-2 mb-6">
+				{#if distribusiList.length === 0}
+					<p class="text-center text-[#5f6b6f] py-8">Tidak ada distribusi dalam 30 hari terakhir</p>
+				{:else}
+					{#each distribusiList as dist}
+						<label
+							class="flex items-center gap-3 p-4 border-2 rounded-lg cursor-pointer transition-all {selectedDistribusi === dist.id.toString()
+								? 'border-[#306677] bg-[#d1e4ea]'
+								: 'border-[#e4e9ed] hover:border-[#306677]/30'}"
+						>
+							<input
+								type="radio"
+								name="distribusi"
+								value={dist.id}
+								bind:group={selectedDistribusi}
+								class="w-4 h-4 text-[#306677]"
+							/>
+							<div class="flex-1">
+								<div class="flex items-center justify-between mb-1">
+									<span class="font-semibold text-[#2c3437]">
+										{dist.tokoAsal} → {dist.tokoTujuan}
+									</span>
+									<span
+										class="px-2 py-1 rounded-full text-xs font-semibold {dist.status === 'DITERIMA'
+											? 'bg-green-100 text-green-700'
+											: dist.status === 'DIKIRIM'
+												? 'bg-blue-100 text-blue-700'
+												: 'bg-amber-100 text-amber-700'}"
+									>
+										{dist.status}
+									</span>
+								</div>
+								<div class="flex items-center gap-4 text-sm text-[#5f6b6f]">
+									<span>{new Date(dist.tanggal).toLocaleDateString('id-ID')}</span>
+									<span>•</span>
+									<span>{dist.totalItem} item</span>
+									<span>•</span>
+									<span>{dist.jumlahKategori} kategori</span>
+								</div>
+							</div>
+						</label>
+					{/each}
+				{/if}
+			</div>
+
+			<!-- Export Buttons -->
+			<div class="flex flex-col sm:flex-row gap-3">
+				<button
+					on:click={exportPDF}
+					disabled={isExporting || !selectedDistribusi}
+					class="flex-1 px-5 py-3 bg-[#306677] text-white rounded-md text-sm font-semibold hover:bg-[#225a6a] transition-colors flex items-center justify-center gap-2 disabled:bg-[#acb3b7] disabled:cursor-not-allowed"
+				>
+					{#if isExporting}
+						<svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						</svg>
+						Memproses...
+					{:else}
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+							/>
+						</svg>
+						Generate Invoice
+					{/if}
+				</button>
+				<button
+					on:click={exportSuratJalan}
+					disabled={isExporting || !selectedDistribusi}
+					class="flex-1 px-5 py-3 bg-[#3f6754] text-white rounded-md text-sm font-semibold hover:bg-[#2d4a3c] transition-colors flex items-center justify-center gap-2 disabled:bg-[#acb3b7] disabled:cursor-not-allowed"
+				>
+					{#if isExporting}
+						<svg class="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+						</svg>
+						Memproses...
+					{:else}
+						<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+							<path
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								stroke-width="2"
+								d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 2 0 01-2 2z"
+							/>
+						</svg>
+						Generate Surat Jalan
 					{/if}
 				</button>
 			</div>

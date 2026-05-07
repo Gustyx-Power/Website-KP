@@ -3847,3 +3847,313 @@ export async function exportPerformanceTokoExcel(reportData: any) {
         throw error;
     }
 }
+
+export async function exportInvoicePDF(reportData: any) {
+    try {
+        const { default: jsPDF } = await import('jspdf');
+        const { default: autoTable } = await import('jspdf-autotable');
+
+        const doc = new jsPDF();
+        
+        // Header - Invoice
+        doc.setFontSize(24);
+        doc.setTextColor(48, 102, 119);
+        doc.text('INVOICE', 14, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text('IMD Clothes - CV. Inti Media Digital', 14, 28);
+        
+        // Invoice Number & Date
+        doc.setFontSize(10);
+        doc.setTextColor(44, 52, 55);
+        doc.text(`No. Invoice: INV-${reportData.data.distribusi.id.toString().padStart(6, '0')}`, 14, 40);
+        doc.text(`Tanggal: ${new Date(reportData.data.distribusi.tanggal).toLocaleDateString('id-ID')}`, 14, 46);
+        doc.text(`Status: ${reportData.data.distribusi.status}`, 14, 52);
+        
+        // From & To
+        let yPos = 65;
+        
+        doc.setFontSize(11);
+        doc.setTextColor(44, 52, 55);
+        doc.setFont(undefined, 'bold');
+        doc.text('DARI:', 14, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(10);
+        doc.text(reportData.data.tokoAsal.nama, 14, yPos + 6);
+        doc.setTextColor(95, 107, 111);
+        doc.text(reportData.data.tokoAsal.alamat || '-', 14, yPos + 12);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(44, 52, 55);
+        doc.setFont(undefined, 'bold');
+        doc.text('KEPADA:', 120, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(10);
+        doc.text(reportData.data.tokoTujuan.nama, 120, yPos + 6);
+        doc.setTextColor(95, 107, 111);
+        doc.text(reportData.data.tokoTujuan.alamat || '-', 120, yPos + 12);
+        
+        yPos += 25;
+        
+        // Items Table
+        doc.setFontSize(12);
+        doc.setTextColor(44, 52, 55);
+        doc.setFont(undefined, 'bold');
+        doc.text('DETAIL BARANG', 14, yPos);
+        yPos += 8;
+        
+        const itemData = reportData.data.items.map((item: any, idx: number) => [
+            idx + 1,
+            item.kategori,
+            `${item.jumlah} pcs`,
+            formatRupiah(item.hargaModal),
+            formatRupiah(item.subtotal)
+        ]);
+        
+        autoTable(doc, {
+            startY: yPos,
+            head: [['#', 'Nama Barang', 'Qty', 'Harga Satuan', 'Subtotal']],
+            body: itemData,
+            theme: 'grid',
+            headStyles: { fillColor: [48, 102, 119], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 9 },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 10 },
+                1: { cellWidth: 70 },
+                2: { halign: 'center', cellWidth: 25 },
+                3: { halign: 'right', cellWidth: 35 },
+                4: { halign: 'right', cellWidth: 40 }
+            }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 5;
+        
+        // Total
+        doc.setFillColor(48, 102, 119);
+        doc.rect(130, yPos, 70, 8, 'F');
+        doc.setTextColor(255, 255, 255);
+        doc.setFont(undefined, 'bold');
+        doc.text('TOTAL:', 135, yPos + 5);
+        doc.text(formatRupiah(reportData.data.totalNilai), 195, yPos + 5, { align: 'right' });
+        
+        yPos += 15;
+        
+        // Keterangan
+        if (reportData.data.distribusi.keterangan) {
+            doc.setTextColor(44, 52, 55);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.text('Keterangan:', 14, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(95, 107, 111);
+            doc.text(reportData.data.distribusi.keterangan, 14, yPos + 6);
+            yPos += 15;
+        }
+        
+        // Signature Section
+        yPos = Math.max(yPos, 220);
+        
+        doc.setFontSize(9);
+        doc.setTextColor(44, 52, 55);
+        
+        // Dibuat Oleh
+        doc.text('Dibuat Oleh,', 20, yPos);
+        doc.line(14, yPos + 20, 60, yPos + 20);
+        doc.text(reportData.data.createdBy, 37, yPos + 25, { align: 'center' });
+        
+        // Diterima Oleh
+        doc.text('Diterima Oleh,', 90, yPos);
+        doc.line(84, yPos + 20, 130, yPos + 20);
+        doc.text('(............................)', 107, yPos + 25, { align: 'center' });
+        
+        // Disetujui Oleh
+        doc.text('Disetujui Oleh,', 160, yPos);
+        doc.line(154, yPos + 20, 200, yPos + 20);
+        doc.text('(............................)', 177, yPos + 25, { align: 'center' });
+        
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+            `Dicetak pada ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`,
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 10,
+            { align: 'center' }
+        );
+        
+        doc.save(`Invoice-${reportData.data.distribusi.id}-${new Date().getTime()}.pdf`);
+    } catch (error) {
+        console.error('Error in exportInvoicePDF:', error);
+        throw error;
+    }
+}
+
+export async function exportSuratJalanPDF(reportData: any) {
+    try {
+        const { default: jsPDF } = await import('jspdf');
+        const { default: autoTable } = await import('jspdf-autotable');
+
+        const doc = new jsPDF();
+        
+        // Header - Surat Jalan
+        doc.setFontSize(24);
+        doc.setTextColor(48, 102, 119);
+        doc.text('SURAT JALAN', 14, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text('IMD Clothes - CV. Inti Media Digital', 14, 28);
+        
+        // Surat Jalan Number & Date
+        doc.setFontSize(10);
+        doc.setTextColor(44, 52, 55);
+        doc.text(`No. Surat Jalan: SJ-${reportData.data.distribusi.id.toString().padStart(6, '0')}`, 14, 40);
+        doc.text(`Tanggal: ${new Date(reportData.data.distribusi.tanggal).toLocaleDateString('id-ID')}`, 14, 46);
+        doc.text(`Status: ${reportData.data.distribusi.status}`, 14, 52);
+        
+        // From & To
+        let yPos = 65;
+        
+        doc.setFontSize(11);
+        doc.setTextColor(44, 52, 55);
+        doc.setFont(undefined, 'bold');
+        doc.text('PENGIRIM:', 14, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(10);
+        doc.text(reportData.data.tokoAsal.nama, 14, yPos + 6);
+        doc.setTextColor(95, 107, 111);
+        doc.text(reportData.data.tokoAsal.alamat || '-', 14, yPos + 12);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(44, 52, 55);
+        doc.setFont(undefined, 'bold');
+        doc.text('PENERIMA:', 120, yPos);
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(10);
+        doc.text(reportData.data.tokoTujuan.nama, 120, yPos + 6);
+        doc.setTextColor(95, 107, 111);
+        doc.text(reportData.data.tokoTujuan.alamat || '-', 120, yPos + 12);
+        
+        yPos += 25;
+        
+        // Items Table
+        doc.setFontSize(12);
+        doc.setTextColor(44, 52, 55);
+        doc.setFont(undefined, 'bold');
+        doc.text('DAFTAR BARANG', 14, yPos);
+        yPos += 8;
+        
+        const itemData = reportData.data.items.map((item: any, idx: number) => [
+            idx + 1,
+            item.kategori,
+            `${item.jumlah} pcs`,
+            '[ ]' // Checkbox untuk konfirmasi
+        ]);
+        
+        autoTable(doc, {
+            startY: yPos,
+            head: [['#', 'Nama Barang', 'Jumlah', 'Diterima']],
+            body: itemData,
+            theme: 'grid',
+            headStyles: { fillColor: [48, 102, 119], textColor: 255, fontStyle: 'bold' },
+            styles: { fontSize: 10 },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 15 },
+                1: { cellWidth: 100 },
+                2: { halign: 'center', cellWidth: 35 },
+                3: { halign: 'center', cellWidth: 30 }
+            }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+        
+        // Summary Box
+        doc.setDrawColor(48, 102, 119);
+        doc.setLineWidth(0.5);
+        doc.rect(14, yPos, 182, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(44, 52, 55);
+        doc.setFont(undefined, 'bold');
+        doc.text('Total Item:', 20, yPos + 8);
+        doc.setFont(undefined, 'normal');
+        doc.text(`${reportData.data.totalItem} pcs`, 50, yPos + 8);
+        
+        doc.setFont(undefined, 'bold');
+        doc.text('Total Kategori:', 20, yPos + 15);
+        doc.setFont(undefined, 'normal');
+        doc.text(`${reportData.data.items.length} kategori`, 50, yPos + 15);
+        
+        yPos += 30;
+        
+        // Keterangan
+        if (reportData.data.distribusi.keterangan) {
+            doc.setTextColor(44, 52, 55);
+            doc.setFont(undefined, 'bold');
+            doc.setFontSize(10);
+            doc.text('Keterangan:', 14, yPos);
+            doc.setFont(undefined, 'normal');
+            doc.setTextColor(95, 107, 111);
+            doc.text(reportData.data.distribusi.keterangan, 14, yPos + 6);
+            yPos += 15;
+        }
+        
+        // Notes
+        doc.setFontSize(9);
+        doc.setTextColor(220, 38, 38);
+        doc.setFont(undefined, 'italic');
+        doc.text('* Mohon periksa kondisi barang saat diterima', 14, yPos);
+        doc.text('* Segera laporkan jika ada kerusakan atau kekurangan', 14, yPos + 5);
+        
+        // Signature Section
+        yPos = Math.max(yPos + 15, 220);
+        
+        doc.setFontSize(9);
+        doc.setTextColor(44, 52, 55);
+        doc.setFont(undefined, 'normal');
+        
+        // Pengirim
+        doc.text('Pengirim,', 30, yPos);
+        doc.line(20, yPos + 20, 70, yPos + 20);
+        doc.text(reportData.data.createdBy, 45, yPos + 25, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setTextColor(95, 107, 111);
+        doc.text(`Tanggal: ${new Date(reportData.data.distribusi.tanggal).toLocaleDateString('id-ID')}`, 45, yPos + 30, { align: 'center' });
+        
+        // Penerima
+        doc.setFontSize(9);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Penerima,', 100, yPos);
+        doc.line(90, yPos + 20, 140, yPos + 20);
+        doc.text('(............................)', 115, yPos + 25, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setTextColor(95, 107, 111);
+        doc.text('Tanggal: ___/___/______', 115, yPos + 30, { align: 'center' });
+        
+        // Sopir/Kurir
+        doc.setFontSize(9);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Sopir/Kurir,', 165, yPos);
+        doc.line(155, yPos + 20, 205, yPos + 20);
+        doc.text('(............................)', 180, yPos + 25, { align: 'center' });
+        doc.setFontSize(7);
+        doc.setTextColor(95, 107, 111);
+        doc.text('No. Kendaraan: __________', 180, yPos + 30, { align: 'center' });
+        
+        // Footer
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text(
+            `Dicetak pada ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`,
+            doc.internal.pageSize.width / 2,
+            doc.internal.pageSize.height - 10,
+            { align: 'center' }
+        );
+        
+        doc.save(`Surat-Jalan-${reportData.data.distribusi.id}-${new Date().getTime()}.pdf`);
+    } catch (error) {
+        console.error('Error in exportSuratJalanPDF:', error);
+        throw error;
+    }
+}
