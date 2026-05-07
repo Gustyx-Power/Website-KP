@@ -964,5 +964,139 @@ export const actions: Actions = {
                 pegawaiByRole
             }
         };
+    },
+
+    getPerformanceTokoData: async ({ request }) => {
+        const formData = await request.formData();
+        const periode = formData.get('periode') as string;
+        const customStartDate = formData.get('customStartDate') as string;
+        const customEndDate = formData.get('customEndDate') as string;
+
+        // Calculate date range
+        let startDate = new Date();
+        let endDate = new Date();
+
+        if (periode === 'custom' && customStartDate && customEndDate) {
+            startDate = new Date(customStartDate);
+            endDate = new Date(customEndDate);
+        } else {
+            const days = parseInt(periode) || 7;
+            startDate.setDate(startDate.getDate() - days);
+        }
+
+        // Get all toko cabang (exclude pusat)
+        const tokoList = await prisma.toko.findMany({
+            where: { 
+                is_pusat: false,
+                isActive: true 
+            }
+        });
+
+        // Calculate performance for each toko
+        const performanceData = await Promise.all(
+            tokoList.map(async (toko) => {
+                // Get penjualan
+                const penjualan = await prisma.penjualan.findMany({
+                    where: {
+                        id_toko: toko.id,
+                        tanggal: { gte: startDate, lte: endDate }
+                    }
+                });
+
+                const totalPenjualan = penjualan.length;
+                const totalQtyTerjual = penjualan.reduce((sum, p) => sum + (p.qty_terjual || 0), 0);
+                const totalRevenue = penjualan.reduce((sum, p) => sum + (p.total_uang || 0), 0);
+
+                // Get distribusi diterima
+                const distribusiDiterima = await prisma.distribusi.count({
+                    where: {
+                        id_toko_tujuan: toko.id,
+                        status: 'DITERIMA',
+                        tanggal: { gte: startDate, lte: endDate }
+                    }
+                });
+
+                // Get retur
+                const retur = await prisma.retur.findMany({
+                    where: {
+                        id_toko: toko.id,
+                        tanggal: { gte: startDate, lte: endDate }
+                    }
+                });
+
+                const totalRetur = retur.length;
+                const totalQtyRetur = retur.reduce((sum, r) => sum + (r.qty_retur || 0), 0);
+
+                // Get current stock
+                const stok = await prisma.stok.findMany({
+                    where: { id_toko: toko.id }
+                });
+
+                const totalStok = stok.reduce((sum, s) => sum + (s.jumlah || 0), 0);
+                const stokMenipis = stok.filter(s => s.jumlah < 15).length;
+
+                // Calculate performance score (simple scoring)
+                const revenueScore = totalRevenue / 1000000; // per million
+                const penjualanScore = totalPenjualan * 2;
+                const returPenalty = totalRetur * -5;
+                const stokScore = totalStok / 100;
+                
+                const performanceScore = Math.max(0, revenueScore + penjualanScore + returPenalty + stokScore);
+
+                return {
+                    toko: toko.nama_toko,
+                    alamat: toko.alamat,
+                    totalPenjualan,
+                    totalQtyTerjual,
+                    totalRevenue,
+                    distribusiDiterima,
+                    totalRetur,
+                    totalQtyRetur,
+                    totalStok,
+                    stokMenipis,
+                    performanceScore: Math.round(performanceScore * 10) / 10
+                };
+            })
+        );
+
+        // Sort by performance score
+        performanceData.sort((a, b) => b.performanceScore - a.performanceScore);
+
+        // Add ranking
+        const rankedData = performanceData.map((item, idx) => ({
+            ...item,
+            ranking: idx + 1
+        }));
+
+        // Calculate totals
+        const totalRevenue = performanceData.reduce((sum, p) => sum + p.totalRevenue, 0);
+        const totalPenjualan = performanceData.reduce((sum, p) => sum + p.totalPenjualan, 0);
+        const totalQtyTerjual = performanceData.reduce((sum, p) => sum + p.totalQtyTerjual, 0);
+        const totalRetur = performanceData.reduce((sum, p) => sum + p.totalRetur, 0);
+
+        // Get top 3 and bottom 3
+        const top3 = rankedData.slice(0, 3);
+        const bottom3 = rankedData.slice(-3).reverse();
+
+        return {
+            success: true,
+            data: {
+                periode: {
+                    start: startDate.toISOString(),
+                    end: endDate.toISOString()
+                },
+                ringkasan: {
+                    totalToko: tokoList.length,
+                    totalRevenue,
+                    totalPenjualan,
+                    totalQtyTerjual,
+                    totalRetur,
+                    avgRevenuePerToko: tokoList.length > 0 ? Math.round(totalRevenue / tokoList.length) : 0
+                },
+                performanceData: rankedData,
+                top3,
+                bottom3
+            }
+        };
     }
 };

@@ -3443,3 +3443,407 @@ export async function exportPegawaiExcel(reportData: any) {
         throw error;
     }
 }
+
+export async function exportPerformanceTokoPDF(reportData: any) {
+    try {
+        const { default: jsPDF } = await import('jspdf');
+        const { default: autoTable } = await import('jspdf-autotable');
+
+        const doc = new jsPDF('landscape'); // Landscape untuk tabel yang lebar
+        
+        // Header
+        doc.setFontSize(20);
+        doc.setTextColor(48, 102, 119);
+        doc.text('IMD Clothes', 14, 20);
+        
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text('CV. Inti Media Digital', 14, 26);
+        
+        doc.setFontSize(16);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Laporan Performance Toko', 14, 40);
+        
+        // Info
+        const startDate = new Date(reportData.data.periode.start);
+        const endDate = new Date(reportData.data.periode.end);
+        doc.setFontSize(10);
+        doc.setTextColor(95, 107, 111);
+        doc.text(`Periode: ${startDate.toLocaleDateString('id-ID')} - ${endDate.toLocaleDateString('id-ID')}`, 14, 47);
+        doc.text(`Dicetak: ${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`, 14, 52);
+        
+        let yPos = 60;
+        
+        // Ringkasan
+        doc.setFontSize(12);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Ringkasan Performance', 14, yPos);
+        yPos += 8;
+        
+        const ringkasanData = [
+            ['Total Toko', `${reportData.data.ringkasan.totalToko} toko`],
+            ['Total Revenue', formatRupiah(reportData.data.ringkasan.totalRevenue)],
+            ['Total Penjualan', `${reportData.data.ringkasan.totalPenjualan} transaksi`],
+            ['Total Qty Terjual', `${reportData.data.ringkasan.totalQtyTerjual.toLocaleString('id-ID')} pcs`],
+            ['Rata-rata Revenue/Toko', formatRupiah(reportData.data.ringkasan.avgRevenuePerToko)]
+        ];
+        
+        autoTable(doc, {
+            startY: yPos,
+            head: [['Metrik', 'Nilai']],
+            body: ringkasanData,
+            theme: 'grid',
+            headStyles: { fillColor: [236, 72, 153], textColor: 255 },
+            styles: { fontSize: 9 }
+        });
+        
+        yPos = (doc as any).lastAutoTable.finalY + 10;
+        
+        // Ranking Performance
+        doc.setFontSize(12);
+        doc.setTextColor(44, 52, 55);
+        doc.text('Ranking Performance Toko', 14, yPos);
+        yPos += 8;
+        
+        const performanceData = reportData.data.performanceData.map((item: any) => [
+            item.ranking,
+            item.toko,
+            `${item.totalPenjualan} trx`,
+            formatRupiah(item.totalRevenue),
+            `${item.totalQtyTerjual} pcs`,
+            `${item.totalRetur} retur`,
+            item.performanceScore.toFixed(1)
+        ]);
+        
+        autoTable(doc, {
+            startY: yPos,
+            head: [['#', 'Toko', 'Penjualan', 'Revenue', 'Qty Terjual', 'Retur', 'Score']],
+            body: performanceData,
+            theme: 'striped',
+            headStyles: { fillColor: [236, 72, 153], textColor: 255 },
+            styles: { fontSize: 8 },
+            columnStyles: {
+                0: { halign: 'center', cellWidth: 10 },
+                1: { cellWidth: 50 },
+                2: { halign: 'center', cellWidth: 30 },
+                3: { cellWidth: 40 },
+                4: { halign: 'center', cellWidth: 30 },
+                5: { halign: 'center', cellWidth: 25 },
+                6: { halign: 'center', cellWidth: 20 }
+            },
+            didParseCell: function(data: any) {
+                if (data.section === 'body' && data.column.index === 0) {
+                    const ranking = parseInt(data.cell.raw);
+                    if (ranking === 1) {
+                        data.cell.styles.fillColor = [254, 240, 138]; // Gold
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (ranking === 2) {
+                        data.cell.styles.fillColor = [229, 231, 235]; // Silver
+                        data.cell.styles.fontStyle = 'bold';
+                    } else if (ranking === 3) {
+                        data.cell.styles.fillColor = [253, 224, 71]; // Bronze
+                        data.cell.styles.fontStyle = 'bold';
+                    }
+                }
+            }
+        });
+        
+        // Footer
+        const pageCount = (doc as any).internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+            doc.setPage(i);
+            doc.setFontSize(8);
+            doc.setTextColor(150);
+            doc.text(
+                `Halaman ${i} dari ${pageCount}`,
+                doc.internal.pageSize.width / 2,
+                doc.internal.pageSize.height - 10,
+                { align: 'center' }
+            );
+        }
+        
+        doc.save(`Laporan-Performance-Toko-${new Date().getTime()}.pdf`);
+    } catch (error) {
+        console.error('Error in exportPerformanceTokoPDF:', error);
+        throw error;
+    }
+}
+
+export async function exportPerformanceTokoExcel(reportData: any) {
+    try {
+        const ExcelJS = await import('exceljs');
+        const workbook = new ExcelJS.Workbook();
+        workbook.creator = 'IMD Clothes';
+        workbook.created = new Date();
+        
+        // ===== SHEET 1: RINGKASAN =====
+        const sheet1 = workbook.addWorksheet('Ringkasan', {
+            properties: { tabColor: { argb: 'FFEC4899' } }
+        });
+        
+        // Title
+        sheet1.mergeCells('A1:B1');
+        const titleCell = sheet1.getCell('A1');
+        titleCell.value = 'LAPORAN PERFORMANCE TOKO';
+        titleCell.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFEC4899' } };
+        titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        sheet1.mergeCells('A2:B2');
+        const subtitleCell = sheet1.getCell('A2');
+        subtitleCell.value = 'IMD Clothes - CV. Inti Media Digital';
+        subtitleCell.font = { name: 'Calibri', size: 11, color: { argb: 'FF5f6b6f' } };
+        subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Info
+        sheet1.getCell('A4').value = 'Periode';
+        sheet1.getCell('B4').value = `${new Date(reportData.data.periode.start).toLocaleDateString('id-ID')} - ${new Date(reportData.data.periode.end).toLocaleDateString('id-ID')}`;
+        sheet1.getCell('A5').value = 'Dicetak';
+        sheet1.getCell('B5').value = `${new Date().toLocaleDateString('id-ID')} ${new Date().toLocaleTimeString('id-ID')}`;
+        
+        // Ringkasan Section
+        sheet1.mergeCells('A7:B7');
+        const ringkasanTitle = sheet1.getCell('A7');
+        ringkasanTitle.value = 'RINGKASAN PERFORMANCE';
+        ringkasanTitle.font = { name: 'Calibri', size: 12, bold: true };
+        ringkasanTitle.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFCE7F3' } };
+        ringkasanTitle.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Table Header
+        sheet1.getCell('A8').value = 'Metrik';
+        sheet1.getCell('B8').value = 'Nilai';
+        ['A8', 'B8'].forEach(cell => {
+            const c = sheet1.getCell(cell);
+            c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEC4899' } };
+            c.alignment = { horizontal: 'center', vertical: 'middle' };
+            c.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+        
+        // Ringkasan Data
+        const ringkasanData = [
+            ['Total Toko', `${reportData.data.ringkasan.totalToko} toko`],
+            ['Total Revenue', reportData.data.ringkasan.totalRevenue],
+            ['Total Penjualan', `${reportData.data.ringkasan.totalPenjualan} transaksi`],
+            ['Total Qty Terjual', `${reportData.data.ringkasan.totalQtyTerjual.toLocaleString('id-ID')} pcs`],
+            ['Rata-rata Revenue/Toko', reportData.data.ringkasan.avgRevenuePerToko]
+        ];
+        
+        ringkasanData.forEach((row, idx) => {
+            const rowNum = 9 + idx;
+            sheet1.getCell(`A${rowNum}`).value = row[0];
+            sheet1.getCell(`B${rowNum}`).value = row[1];
+            
+            if (idx === 1 || idx === 4) {
+                sheet1.getCell(`B${rowNum}`).numFmt = '"Rp "#,##0';
+            }
+            
+            ['A', 'B'].forEach(col => {
+                const cell = sheet1.getCell(`${col}${rowNum}`);
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                if (idx % 2 === 0) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                }
+            });
+        });
+        
+        // Column widths
+        sheet1.getColumn('A').width = 35;
+        sheet1.getColumn('B').width = 30;
+        
+        // ===== SHEET 2: RANKING PERFORMANCE =====
+        const sheet2 = workbook.addWorksheet('Ranking Performance', {
+            properties: { tabColor: { argb: 'FFEC4899' } }
+        });
+        
+        // Title
+        sheet2.mergeCells('A1:J1');
+        const title2 = sheet2.getCell('A1');
+        title2.value = 'RANKING PERFORMANCE TOKO';
+        title2.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FFEC4899' } };
+        title2.alignment = { horizontal: 'center', vertical: 'middle' };
+        
+        // Table Header
+        const headers2 = ['Rank', 'Toko', 'Penjualan', 'Revenue', 'Qty Terjual', 'Distribusi', 'Retur', 'Stok', 'Stok Menipis', 'Score'];
+        headers2.forEach((header, idx) => {
+            const cell = sheet2.getCell(3, idx + 1);
+            cell.value = header;
+            cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFEC4899' } };
+            cell.alignment = { horizontal: 'center', vertical: 'middle' };
+            cell.border = {
+                top: { style: 'thin' },
+                left: { style: 'thin' },
+                bottom: { style: 'thin' },
+                right: { style: 'thin' }
+            };
+        });
+        
+        // Table Data
+        reportData.data.performanceData.forEach((item: any, idx: number) => {
+            const rowNum = 4 + idx;
+            sheet2.getCell(`A${rowNum}`).value = item.ranking;
+            sheet2.getCell(`B${rowNum}`).value = item.toko;
+            sheet2.getCell(`C${rowNum}`).value = item.totalPenjualan;
+            sheet2.getCell(`D${rowNum}`).value = item.totalRevenue;
+            sheet2.getCell(`D${rowNum}`).numFmt = '"Rp "#,##0';
+            sheet2.getCell(`E${rowNum}`).value = item.totalQtyTerjual;
+            sheet2.getCell(`F${rowNum}`).value = item.distribusiDiterima;
+            sheet2.getCell(`G${rowNum}`).value = item.totalRetur;
+            sheet2.getCell(`H${rowNum}`).value = item.totalStok;
+            sheet2.getCell(`I${rowNum}`).value = item.stokMenipis;
+            sheet2.getCell(`J${rowNum}`).value = item.performanceScore;
+            
+            ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach(col => {
+                const cell = sheet2.getCell(`${col}${rowNum}`);
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+                if (idx % 2 === 0) {
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFf7f9fb' } };
+                }
+            });
+            
+            // Center align numeric columns
+            ['A', 'C', 'E', 'F', 'G', 'H', 'I', 'J'].forEach(col => {
+                sheet2.getCell(`${col}${rowNum}`).alignment = { horizontal: 'center' };
+            });
+            
+            // Highlight top 3
+            const rankCell = sheet2.getCell(`A${rowNum}`);
+            if (item.ranking === 1) {
+                rankCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFEF08A' } }; // Gold
+                rankCell.font = { bold: true };
+            } else if (item.ranking === 2) {
+                rankCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE5E7EB' } }; // Silver
+                rankCell.font = { bold: true };
+            } else if (item.ranking === 3) {
+                rankCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFDE047' } }; // Bronze
+                rankCell.font = { bold: true };
+            }
+            
+            // Color score
+            const scoreCell = sheet2.getCell(`J${rowNum}`);
+            scoreCell.font = { bold: true };
+            if (item.performanceScore >= 50) {
+                scoreCell.font = { bold: true, color: { argb: 'FF10B981' } };
+            } else if (item.performanceScore >= 30) {
+                scoreCell.font = { bold: true, color: { argb: 'FFF59E0B' } };
+            } else {
+                scoreCell.font = { bold: true, color: { argb: 'FFDC2626' } };
+            }
+        });
+        
+        // Column widths
+        sheet2.getColumn('A').width = 8;
+        sheet2.getColumn('B').width = 25;
+        sheet2.getColumn('C').width = 12;
+        sheet2.getColumn('D').width = 20;
+        sheet2.getColumn('E').width = 12;
+        sheet2.getColumn('F').width = 12;
+        sheet2.getColumn('G').width = 10;
+        sheet2.getColumn('H').width = 10;
+        sheet2.getColumn('I').width = 14;
+        sheet2.getColumn('J').width = 10;
+        
+        // ===== SHEET 3: TOP 3 TOKO =====
+        if (reportData.data.top3.length > 0) {
+            const sheet3 = workbook.addWorksheet('Top 3 Toko', {
+                properties: { tabColor: { argb: 'FF10B981' } }
+            });
+            
+            // Title
+            sheet3.mergeCells('A1:J1');
+            const title3 = sheet3.getCell('A1');
+            title3.value = 'TOP 3 TOKO TERBAIK';
+            title3.font = { name: 'Calibri', size: 16, bold: true, color: { argb: 'FF10B981' } };
+            title3.alignment = { horizontal: 'center', vertical: 'middle' };
+            
+            // Table Header
+            const headers3 = ['Rank', 'Toko', 'Penjualan', 'Revenue', 'Qty Terjual', 'Distribusi', 'Retur', 'Stok', 'Stok Menipis', 'Score'];
+            headers3.forEach((header, idx) => {
+                const cell = sheet3.getCell(3, idx + 1);
+                cell.value = header;
+                cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF10B981' } };
+                cell.alignment = { horizontal: 'center', vertical: 'middle' };
+                cell.border = {
+                    top: { style: 'thin' },
+                    left: { style: 'thin' },
+                    bottom: { style: 'thin' },
+                    right: { style: 'thin' }
+                };
+            });
+            
+            // Table Data
+            reportData.data.top3.forEach((item: any, idx: number) => {
+                const rowNum = 4 + idx;
+                sheet3.getCell(`A${rowNum}`).value = item.ranking;
+                sheet3.getCell(`B${rowNum}`).value = item.toko;
+                sheet3.getCell(`C${rowNum}`).value = item.totalPenjualan;
+                sheet3.getCell(`D${rowNum}`).value = item.totalRevenue;
+                sheet3.getCell(`D${rowNum}`).numFmt = '"Rp "#,##0';
+                sheet3.getCell(`E${rowNum}`).value = item.totalQtyTerjual;
+                sheet3.getCell(`F${rowNum}`).value = item.distribusiDiterima;
+                sheet3.getCell(`G${rowNum}`).value = item.totalRetur;
+                sheet3.getCell(`H${rowNum}`).value = item.totalStok;
+                sheet3.getCell(`I${rowNum}`).value = item.stokMenipis;
+                sheet3.getCell(`J${rowNum}`).value = item.performanceScore;
+                
+                ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'].forEach(col => {
+                    const cell = sheet3.getCell(`${col}${rowNum}`);
+                    cell.border = {
+                        top: { style: 'thin' },
+                        left: { style: 'thin' },
+                        bottom: { style: 'thin' },
+                        right: { style: 'thin' }
+                    };
+                    cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD1FAE5' } };
+                });
+                
+                ['A', 'C', 'E', 'F', 'G', 'H', 'I', 'J'].forEach(col => {
+                    sheet3.getCell(`${col}${rowNum}`).alignment = { horizontal: 'center' };
+                });
+                
+                sheet3.getCell(`J${rowNum}`).font = { bold: true, color: { argb: 'FF10B981' } };
+            });
+            
+            // Column widths
+            sheet3.getColumn('A').width = 8;
+            sheet3.getColumn('B').width = 25;
+            sheet3.getColumn('C').width = 12;
+            sheet3.getColumn('D').width = 20;
+            sheet3.getColumn('E').width = 12;
+            sheet3.getColumn('F').width = 12;
+            sheet3.getColumn('G').width = 10;
+            sheet3.getColumn('H').width = 10;
+            sheet3.getColumn('I').width = 14;
+            sheet3.getColumn('J').width = 10;
+        }
+        
+        // Save Excel
+        const buffer = await workbook.xlsx.writeBuffer();
+        const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `Laporan-Performance-Toko-${new Date().getTime()}.xlsx`;
+        link.click();
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        console.error('Error in exportPerformanceTokoExcel:', error);
+        throw error;
+    }
+}
